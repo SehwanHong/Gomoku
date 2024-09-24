@@ -22,7 +22,7 @@ class MNKDisplay(tk.Frame):
         self.canv.bind("<Button-3>", self.action)
         self.winner = self.gameState.winner
         self.drawBoard()
-        self.mctsPlayer = MCTS(iterationLimit=1000)
+        self.mctsPlayer = MCTS(iterationLimit=300)
         self.ClickTrue = True
 
 
@@ -30,6 +30,7 @@ class MNKDisplay(tk.Frame):
         self.canv.create_oval(x - self.bsize//2, y - self.bsize//2, x + self.bsize//2, y + self.bsize//2, fill = fill, outline = outline, width = width)
     
     def drawBoard(self):
+        self.possibleMove = self.gameState.getPossibleActions()
         for r in range(self.gameState.row):
             self.canv.create_line(0, self.bsize//2 + self.bsize * r, self.W, self.bsize//2 + self.bsize * r)
         for c in range(self.gameState.col):
@@ -41,6 +42,8 @@ class MNKDisplay(tk.Frame):
                     self.create_circle(self.bsize//2+self.bsize*c, self.bsize//2+self.bsize*r, fill='black')
                 elif self.gameState.board[r,c] == -1:
                     self.create_circle(self.bsize//2+self.bsize*c, self.bsize//2+self.bsize*r, fill='white')
+                elif Action(player=self.gameState.getCurrentPlayer(), x=r, y=c) in self.possibleMove:
+                    self.create_circle(self.bsize//2+self.bsize*c, self.bsize//2+self.bsize*r, fill='#888888')
         
         if self.winner != None:
             msg = self.gameState.get_winner()
@@ -61,8 +64,10 @@ class MNKDisplay(tk.Frame):
         y = event.y
         row = y //self.bsize
         col = x //self.bsize
+
+        currentAction = Action(player=self.gameState.getCurrentPlayer(), x=row, y=col)
         
-        if self.gameState.isAvailable(row, col) and self.winner == None and self.ClickTrue:
+        if currentAction in self.possibleMove and self.winner == None and self.ClickTrue:
             self.gameState = self.gameState.takeAction(Action(self.gameState.getCurrentPlayer(), row, col))
             self.winner = self.gameState.winner
             self.ClickTrue = False
