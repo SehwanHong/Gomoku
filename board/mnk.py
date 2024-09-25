@@ -12,7 +12,7 @@ class mnkState(boardState):
         for i in range(self.row):
             for j in range(self.col):
                 if self.isAvailable(i,j):
-                    possibleActions.append(Action(player=self.currentPlayer, x=i, y=j))
+                    possibleActions.append(Action(player=self.currentStone, x=i, y=j))
         return possibleActions
     
     def isAvailable(self, i, j):

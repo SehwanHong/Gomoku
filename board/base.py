@@ -1,8 +1,6 @@
 from copy import deepcopy
 import numpy as np
-
-BLACK = 1
-WHITE = -1
+from board import BLACK, WHITE
 
 class boardState():
     def __init__(self, m=7, n=7, k=5):
@@ -10,11 +8,11 @@ class boardState():
         self.row = m
         self.col = n
         self.k = k
-        self.currentPlayer = BLACK
+        self.currentStone = BLACK
         self.winner = None
 
     def getCurrentPlayer(self):
-        return self.currentPlayer
+        return self.currentStone
 
     def getPossibleActions(self):
         pass
@@ -25,7 +23,7 @@ class boardState():
     def takeAction(self, action):
         newState = deepcopy(self)
         newState.board[action.x][action.y] = action.player
-        newState.currentPlayer = self.currentPlayer * -1
+        newState.currentStone = self.currentStone * -1
         newState.updateWinner()
         return newState
 
@@ -57,5 +55,5 @@ class boardState():
         pass
     
     def __hash__(self) -> int:
-        return hash((tuple(j for i in self.board for j in i), self.currentPlayer))
+        return hash((tuple(j for i in self.board for j in i), self.currentStone))
 
