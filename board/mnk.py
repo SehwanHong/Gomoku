@@ -1,4 +1,4 @@
-from board import boardState
+from .base import boardState
 from action import Action
 
 class mnkState(boardState):

@@ -1,6 +1,4 @@
-from board.base import boardState
-from board.mnk import mnkState
-from board.renju import Renju
-
-BLACK = 1
-WHITE = -1
+from .base import boardState
+from .mnk import mnkState
+from .renju import Renju
+from .constant import BLACK, WHITE

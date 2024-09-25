@@ -1,6 +1,6 @@
 from copy import deepcopy
 import numpy as np
-from board import BLACK, WHITE
+from .constant import BLACK, WHITE
 
 class boardState():
     def __init__(self, m=7, n=7, k=5):
