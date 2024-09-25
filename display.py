@@ -1,5 +1,5 @@
 import tkinter as tk
-from Action import Action
+from action import Action
 # from DQN import DQNPlayer
 from mcts import MCTS
 

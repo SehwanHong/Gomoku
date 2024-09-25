@@ -1,5 +1,5 @@
 from board import mnkState
-from Action import Action
+from action import Action
 from copy import deepcopy
 
 class Renju(mnkState):

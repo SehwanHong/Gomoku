@@ -1,5 +1,5 @@
 from board import boardState
-from Action import Action
+from action import Action
 
 class mnkState(boardState):
     def __init__(self, m=7, n=7, k=5):
