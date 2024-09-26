@@ -115,18 +115,7 @@ class Renju(mnkState):
     def countBothDirection(self, i, j, direction, color, skip=0):
         count = 1
         for pos_neg in range(-1, 2, 2):
-            delta = 1
-            check_skip = 0
-            while True:
-                delta_i = i + direction[0] * delta * pos_neg
-                delta_j = j + direction[1] * delta * pos_neg
-                if self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == color:
-                    count += 1
-                elif self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == 0 and check_skip < skip:
-                    check_skip += 1
-                else:
-                    break
-                delta += 1
+            count += self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg, skip=skip, include_me=False)
         return count
 
     def countSingleDirection(self, i, j, direction, color, pos_neg=1, skip=0, include_me=True):
@@ -149,21 +138,22 @@ class Renju(mnkState):
             delta += 1
         return count
 
-    def checkNeighborBlocked(self, i, j, direction, color):
-        pos_i, pos_j = i + direction[0], j + direction[1]
-        neg_i, neg_j = i - direction[0], j - direction[1]
+    def checkBlocked(self, i, j, direction, color):
+        return self.checkSingleBlocked(i,j,direction, color, pos_neg=1) and self.checkSingleBlocked(i,j,direction, color, pos_neg=-1)
 
-        if not self.isValid(pos_i, pos_j):
-            return True
-        elif not self.isValid(neg_i, neg_j):
-            return True
-        elif self.board[pos_i, pos_j] != color and self.board[pos_i, pos_j] != EMPTY:
-            return True
-        elif self.board[neg_i, neg_j] != color and self.board[neg_i, neg_j] != EMPTY:
-            return True
-        else:
-            return False
-
+    def checkSingleBlocked(self, i, j, direction, color, pos_neg=1):
+        assert pos_neg in [-1, 1]
+        delta = 1
+        while True:
+            delta_i = i + direction[0] * delta * pos_neg
+            delta_j = j + direction[1] * delta * pos_neg
+            if self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == color:
+                pass
+            elif self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == 0:
+                return False
+            else:
+                return True
+            delta += 1
 
     def isFour(self, i, j, color):
         cnt = 0
@@ -173,7 +163,7 @@ class Renju(mnkState):
                 # check for general cases
                 count = self.countBothDirection(i, j, direction, color, skip=1)
                 if count == 4:
-                    if not self.checkNeighborBlocked(i,j,direction, color):
+                    if not self.checkBlocked(i, j, direction, color):
                         cnt += 1
                 elif count > 4:
                     # when the stone is place in one line must consider single skip for each direction
