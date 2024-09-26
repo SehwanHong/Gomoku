@@ -70,12 +70,12 @@ class MNKDisplay(tk.Frame):
         if currentAction in self.possibleMove and self.winner == None and self.ClickTrue:
             self.gameState = self.gameState.takeAction(Action(self.gameState.getCurrentPlayer(), row, col))
             self.winner = self.gameState.winner
-            self.ClickTrue = False
+            # self.ClickTrue = False
             self.canv.delete("all")
             self.drawBoard()
             self.canv.update()
-            if self.winner == None:
-                self.canv.event_generate("<<AIthink>>")
+            # if self.winner == None:
+            #     self.canv.event_generate("<<AIthink>>")
         
         elif self.winner != None:
             msg = self.gameState.get_winner()

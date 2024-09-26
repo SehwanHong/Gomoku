@@ -1,5 +1,6 @@
 from .base import boardState
 from action import Action
+from .constant import EMPTY
 
 class mnkState(boardState):
     def __init__(self, m=7, n=7, k=5):
@@ -16,7 +17,7 @@ class mnkState(boardState):
         return possibleActions
     
     def isAvailable(self, i, j):
-        return self.board[i, j] == 0
+        return self.board[i, j] == EMPTY
 
     def isTerminal(self):
         self.updateWinner()

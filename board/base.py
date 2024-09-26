@@ -1,10 +1,10 @@
 from copy import deepcopy
 import numpy as np
-from .constant import BLACK, WHITE
+from .constant import BLACK, WHITE, EMPTY
 
 class boardState():
     def __init__(self, m=7, n=7, k=5):
-        self.board = np.zeros((m,n))
+        self.board = np.zeros((m,n), dtype=int)
         self.row = m
         self.col = n
         self.k = k
@@ -42,8 +42,10 @@ class boardState():
                     token = 'o'
                 elif self.board[i][j] == WHITE:
                     token = 'x'
-                else:
+                elif self.board[i][j] == EMPTY:
                     token = ' '
+                else:
+                    raise ValueError("self.board cannot have value that is BLACK, WHITE, EMPTY")
                 out += token + ' | '
             print(out)
         print('-'+'----'*self.row)

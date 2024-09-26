@@ -1,7 +1,8 @@
 from .mnk import mnkState
 from action import Action
 from copy import deepcopy
-from .constant import BLACK, WHITE
+from .constant import BLACK, WHITE, EMPTY
+import numpy as np
 
 FIRST_PLAYER = 0
 SECOND_PLAYER = 1
@@ -10,6 +11,7 @@ class Renju(mnkState):
     def __init__(self, m=15, n=15, k=5):
         super().__init__(m=15, n=15, k=5)
         self.move_count = 0
+        self.openningSequence = False
 
         self.currentPlayer = 0
         self.playerStone = [BLACK, WHITE]
@@ -18,23 +20,24 @@ class Renju(mnkState):
         possibleActions = []
         if self.winner != None:
             return possibleActions
-        if self.move_count == 0:
-            possibleActions.append(Action(player=self.currentStone, x=7, y=7))
-            return possibleActions
-        elif self.move_count == 1:
-            for i in [6, 7, 8]:
-                for j in [6, 7, 8]:
-                    if self.isAvailable(i,j):
-                        possibleActions.append(Action(player=self.currentStone, x=i, y=j))
-            return possibleActions
-        elif self.move_count == 2:
-            for i in [5, 6, 7, 8, 9]:
-                for j in [5, 6, 7, 8, 9]:
-                    if self.isAvailable(i,j):
-                        possibleActions.append(Action(player=self.currentStone, x=i, y=j))
-            return possibleActions
-        elif self.move_count == 3 and self.currentPlayer == SECOND_PLAYER:
-            possibleActions.append(Action(player=self.currentStone, x=-1, y=-1))
+        if self.openningSequence:
+            if self.move_count == 0:
+                possibleActions.append(Action(player=self.currentStone, x=7, y=7))
+                return possibleActions
+            elif self.move_count == 1:
+                for i in [6, 7, 8]:
+                    for j in [6, 7, 8]:
+                        if self.isAvailable(i,j):
+                            possibleActions.append(Action(player=self.currentStone, x=i, y=j))
+                return possibleActions
+            elif self.move_count == 2:
+                for i in [5, 6, 7, 8, 9]:
+                    for j in [5, 6, 7, 8, 9]:
+                        if self.isAvailable(i,j):
+                            possibleActions.append(Action(player=self.currentStone, x=i, y=j))
+                return possibleActions
+            elif self.move_count == 3 and self.currentPlayer == SECOND_PLAYER:
+                possibleActions.append(Action(player=self.currentStone, x=-1, y=-1))
         
         if self.currentStone == WHITE:
             for i in range(self.row):
@@ -44,11 +47,14 @@ class Renju(mnkState):
         elif self.currentStone == BLACK:
             for i in range(self.row):
                 for j in range(self.col):
-                    if self.isAvailable(i,j): # and self.isLiveThree(i,j) and self.isLiveFour(i,j) and self.isNotOverline:
+                    if self.isAvailable(i,j) and not self.isOverline(i,j) and self.isFour(i,j, self.currentStone) <= 1: # and self.isLiveThree(i,j) and self.isLiveFour(i,j) and self.isNotOverline:
                         possibleActions.append(Action(player=self.currentStone, x=i, y=j))
         else:
             raise NotImplementedError
         return possibleActions
+
+    def isValid(self, i, j):
+        return i >= 0 and j >= 0 and i < self.row and j < self.col
 
     def isAvailable(self, i, j):
         return super().isAvailable(i, j)
@@ -61,14 +67,105 @@ class Renju(mnkState):
             newState.currentStone = newState.playerStone[newState.currentPlayer]
         else:
             assert action.x >= 0 and action.y >= 0 and action.x < self.row and action.y < self.col
+            assert action.player == self.currentStone
             newState.board[action.x][action.y] = action.player
             newState.move_count += 1
             newState.currentPlayer = ( self.currentPlayer + 1 ) % 2
             newState.currentStone = newState.playerStone[newState.currentPlayer]
-        newState.updateWinner()
+            # newState.four()
+            newState.updateWinner()
         return newState
 
+    def countConsecutive(self, i, j, color):
+        directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
+
+        counts = []
+
+        for direction in directions:
+            count = self.countBothDirection(i, j, direction, color)
+            counts.append(count)
+        
+        return max(counts)
     
+    def five(self, i, j):
+        if self.isAvailable(i, j):
+            return False
+        return self.countConsecutive(i, j, self.board[i, j]) == 5
+    
+    def overline(self, i, j):
+        if self.isAvailable(i, j):
+            return False
+        return self.countConsecutive(i,j, self.board[i, j]) > 5
+    
+    def isOverline(self, i, j):
+        return self.countConsecutive(i, j, self.currentStone) > 5
+
+    def four(self):
+        # 하나를 뒀을 떄 5를 만들 수 있는 자리는 four 이다.
+        four_board = np.zeros((self.row, self.col))
+
+        for i in range(self.row):
+            for j in range(self.col):
+                if self.isAvailable(i, j):
+                    four_board[i, j] += self.isFour(i,j, self.currentStone)
+        if self.currentStone == BLACK:
+            print(four_board)
+        return four_board
+    
+    def countBothDirection(self, i, j, direction, color, skip=0):
+        count = 1
+        for pos_neg in range(-1, 2, 2):
+            delta = 1
+            check_skip = 0
+            while True:
+                delta_i = i + direction[0] * delta * pos_neg
+                delta_j = j + direction[1] * delta * pos_neg
+                if self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == color:
+                    count += 1
+                elif self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == 0 and check_skip < skip:
+                    check_skip += 1
+                else:
+                    break
+                delta += 1
+        return count
+
+    def countSingleDirection(self, i, j, direction, color, pos_neg=1, skip=0, include_me=True):
+        assert pos_neg in [-1, 1]
+        if include_me:
+            count = 1
+        else:
+            count = 0
+        delta = 1
+        check_skip = 0
+        while True:
+            delta_i = i + direction[0] * delta * pos_neg
+            delta_j = j + direction[1] * delta * pos_neg
+            if self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == color:
+                count += 1
+            elif self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == 0 and check_skip < skip:
+                check_skip += 1
+            else:
+                break
+            delta += 1
+        return count
+
+    def isFour(self, i, j, color):
+        cnt = 0
+        directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
+        if self.isAvailable(i, j):
+            for direction in directions:
+                # check for general cases
+                count = self.countBothDirection(i, j, direction, color, skip=1)
+                if count == 4:
+                    cnt += 1
+                elif count > 4:
+                    # when the stone is place in one line must consider single skip for each direction
+                    for pos_neg_dir in range(-1, 2, 2):
+                        count = self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir, skip=0, include_me=True) + self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir * -1, skip=1, include_me=False)
+                        if count == 4:
+                            cnt += 1
+        return cnt
+
     def isTerminal(self):
         self.updateWinner()
         return self.winner != None or len(self.getPossibleActions()) == 0
@@ -80,42 +177,23 @@ class Renju(mnkState):
             return self.winner
     
     def updateWinner(self):
-        for r in range(self.row-self.k+1):
-            for c in range(self.col):
-                if (abs(sum(self.board[r:r+self.k,c])) == self.k 
-                        and not (r > 0 and abs(sum(self.board[r-1:r+self.k,c])) == self.k + 1)
-                        and not (r + self.k < self.row and abs(sum(self.board[r:r+self.k+1,c])) == self.k + 1)):
-                    self.winner = sum(self.board[r:r+self.k,c])//self.k
-                    return self.winner
-
-        for r in range(self.row):
-            for c in range(self.col-self.k+1):
-                if (abs(sum(self.board[r,c:c+self.k])) == self.k 
-                        and not (c > 0 and abs(sum(self.board[r,c-1:c+self.k])) == self.k + 1)
-                        and not (c + self.k < self.col and abs(sum(self.board[r,c:c+self.k+1])) == self.k + 1)):
-                    self.winner = sum(self.board[r,c:c+self.k])//self.k
-                    return self.winner
-        
-        for r in range(self.row-self.k+1):
-            for c in range(self.col-self.k+1):
-                if (abs(sum(self.board[r+i,c+i] for i in range(self.k))) == self.k
-                        and not (r > 0 and c > 0 and abs(sum(self.board[r+i-1,c+i-1] for i in range(self.k+1))) == self.k+1)
-                        and not (r + self.k < self.row and c + self.k < self.col and abs(sum(self.board[r+i,c+i] for i in range(self.k+1))) == self.k+1)):
-                    self.winner = sum(self.board[r+i,c+i] for i in range(self.k))//self.k
-                    return self.winner
-        
-        for r in range(self.row-self.k+1):
-            for c in range(self.col-1, self.k - 2, -1):
-                if (abs(sum(self.board[r+i,c-i] for i in range(self.k))) == self.k
-                        and not (r > 0 and c + 1 < self.col and abs(sum(self.board[r+i-1,c-i+1] for i in range(self.k+1))) == self.k+1)
-                        and not (r + self.k < self.row and c + 1 > self.k and abs(sum(self.board[r+i,c-i] for i in range(self.k+1))) == self.k+1)
-                        ):
-                    self.winner = sum(self.board[r+i,c-i] for i in range(self.k))//self.k
-                    return self.winner
-        
         if len(self.getPossibleActions()) == 0:
             self.winner = 0
             return self.winner
+
+        for i in range(self.row):
+            for j in range(self.col):
+                if self.board[i][j] == BLACK and self.five(i,j):
+                    self.winner = BLACK
+                    return self.winner
+                elif self.board[i][j] == WHITE and (self.five(i,j) or self.overline(i,j)):
+                    self.winner = WHITE
+                    return self.winner
+                elif self.board[i][j] not in[BLACK, WHITE, EMPTY]:
+                    raise ValueError("self.board cannot have value that is BLACK, WHITE, EMPTY")
+                else:
+                    pass
+        
         self.winner = None
         return self.winner
     
