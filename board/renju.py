@@ -72,7 +72,7 @@ class Renju(mnkState):
             newState.move_count += 1
             newState.currentPlayer = ( self.currentPlayer + 1 ) % 2
             newState.currentStone = newState.playerStone[newState.currentPlayer]
-            # newState.four()
+            newState.four()
             newState.updateWinner()
         return newState
 
@@ -149,6 +149,22 @@ class Renju(mnkState):
             delta += 1
         return count
 
+    def checkNeighborBlocked(self, i, j, direction, color):
+        pos_i, pos_j = i + direction[0], j + direction[1]
+        neg_i, neg_j = i - direction[0], j - direction[1]
+
+        if not self.isValid(pos_i, pos_j):
+            return True
+        elif not self.isValid(neg_i, neg_j):
+            return True
+        elif self.board[pos_i, pos_j] != color and self.board[pos_i, pos_j] != EMPTY:
+            return True
+        elif self.board[neg_i, neg_j] != color and self.board[neg_i, neg_j] != EMPTY:
+            return True
+        else:
+            return False
+
+
     def isFour(self, i, j, color):
         cnt = 0
         directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
@@ -157,7 +173,8 @@ class Renju(mnkState):
                 # check for general cases
                 count = self.countBothDirection(i, j, direction, color, skip=1)
                 if count == 4:
-                    cnt += 1
+                    if not self.checkNeighborBlocked(i,j,direction, color):
+                        cnt += 1
                 elif count > 4:
                     # when the stone is place in one line must consider single skip for each direction
                     for pos_neg_dir in range(-1, 2, 2):
@@ -165,6 +182,9 @@ class Renju(mnkState):
                         if count == 4:
                             cnt += 1
         return cnt
+
+    def isOpenFour(self, i, j, color):
+        pass
 
     def isTerminal(self):
         self.updateWinner()
