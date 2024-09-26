@@ -72,7 +72,7 @@ class Renju(mnkState):
             newState.move_count += 1
             newState.currentPlayer = ( self.currentPlayer + 1 ) % 2
             newState.currentStone = newState.playerStone[newState.currentPlayer]
-            newState.four()
+            # newState._openfour()
             newState.updateWinner()
         return newState
 
@@ -100,7 +100,7 @@ class Renju(mnkState):
     def isOverline(self, i, j):
         return self.countConsecutive(i, j, self.currentStone) > 5
 
-    def four(self):
+    def _four(self):
         # 하나를 뒀을 떄 5를 만들 수 있는 자리는 four 이다.
         four_board = np.zeros((self.row, self.col))
 
@@ -108,8 +108,17 @@ class Renju(mnkState):
             for j in range(self.col):
                 if self.isAvailable(i, j):
                     four_board[i, j] += self.isFour(i,j, self.currentStone)
-        if self.currentStone == BLACK:
-            print(four_board)
+        return four_board
+    
+    def _openfour(self):
+        # 하나를 뒀을 떄 5를 만들 수 있는 자리는 four 이다.
+        four_board = np.zeros((self.row, self.col))
+
+        for i in range(self.row):
+            for j in range(self.col):
+                if self.isAvailable(i, j):
+                    four_board[i, j] += self.isOpenFour(i,j, self.currentStone)
+        print(four_board)
         return four_board
     
     def countBothDirection(self, i, j, direction, color, skip=0):
@@ -174,7 +183,15 @@ class Renju(mnkState):
         return cnt
 
     def isOpenFour(self, i, j, color):
-        pass
+        directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
+        if self.isAvailable(i,j):
+            for direction in directions:
+                no_skip_count = self.countBothDirection(i,j, direction, color)
+                skip_count = self.countBothDirection(i,j,direction,color, skip=1)
+                if no_skip_count == 4 and skip_count == no_skip_count:
+                    if not self.checkSingleBlocked(i,j, direction, color, pos_neg=1) and not self.checkSingleBlocked(i,j, direction, color, pos_neg=-1):
+                        return True
+        return False
 
     def isTerminal(self):
         self.updateWinner()
