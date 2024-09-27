@@ -186,11 +186,16 @@ class Renju(mnkState):
         directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
         if self.isAvailable(i,j):
             for direction in directions:
-                no_skip_count = self.countBothDirection(i,j, direction, color)
-                skip_count = self.countBothDirection(i,j,direction,color, skip=1)
-                if no_skip_count == 4 and skip_count == no_skip_count:
-                    if not self.checkSingleBlocked(i,j, direction, color, pos_neg=1) and not self.checkSingleBlocked(i,j, direction, color, pos_neg=-1):
-                        return True
+                if self.checkOpenFourDirection(i, j, direction, color):
+                    return True
+        return False
+
+    def checkOpenFourDirection(self, i, j, direction, color):
+        no_skip_count = self.countBothDirection(i,j, direction, color)
+        skip_count = self.countBothDirection(i,j,direction,color, skip=1)
+        if no_skip_count == 4 and skip_count == no_skip_count:
+            if not self.checkSingleBlocked(i,j, direction, color, pos_neg=1) and not self.checkSingleBlocked(i,j, direction, color, pos_neg=-1):
+                return True
         return False
 
     def isTerminal(self):
