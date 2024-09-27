@@ -47,7 +47,7 @@ class Renju(mnkState):
         elif self.currentStone == BLACK:
             for i in range(self.row):
                 for j in range(self.col):
-                    if self.isAvailable(i,j) and not self.isOverline(i,j) and self.isFour(i,j, self.currentStone) <= 1 and self.isThree(i, j, self.currentStone) <= 1: # and self.isLiveThree(i,j) and self.isLiveFour(i,j) and self.isNotOverline:
+                    if self.isAvailable(i,j) and not self.isOverline(i,j) and self.isFour(i,j, self.currentStone) <= 1 :# and self.isThree(i, j, self.currentStone) <= 1: # and self.isLiveThree(i,j) and self.isLiveFour(i,j) and self.isNotOverline:
                         possibleActions.append(Action(player=self.currentStone, x=i, y=j))
         else:
             raise NotImplementedError
@@ -72,7 +72,7 @@ class Renju(mnkState):
             newState.move_count += 1
             newState.currentPlayer = ( self.currentPlayer + 1 ) % 2
             newState.currentStone = newState.playerStone[newState.currentPlayer]
-            newState._three()
+            newState._four()
             newState.updateWinner()
         return newState
 
@@ -108,6 +108,7 @@ class Renju(mnkState):
             for j in range(self.col):
                 if self.isAvailable(i, j):
                     four_board[i, j] += self.isFour(i,j, self.currentStone)
+        print(four_board)
         return four_board
     
     def _openfour(self):
@@ -186,13 +187,23 @@ class Renju(mnkState):
             for direction in directions:
                 # check for general cases
                 count = self.countBothDirection(i, j, direction, color, skip=1)
+                # cnt_list is for considering for each direction
+                # because self countBoth Direction miss _00_?0_00_ where ? is a place of stone
+                cnt_list = []
+                for pos_neg_dir in range(-1, 2, 2):
+                    temp = self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir, skip=0, include_me=True) + self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir * -1, skip=1, include_me=False)
+                    cnt_list.append(temp)
                 if count == 4:
+                    # checkBlocked is to check if both side is closed
+                    # thus not checkBlocked means at least one side is open
                     if not self.checkBlocked(i, j, direction, color):
-                        cnt += 1
+                        # checking cnt_list[0] and cnt_list[1] to check for correct four
+                        # if _0_?0_0_ where ? is not 'four' because it cannot make '5' by putting one stone
+                        if cnt_list[0] == count or cnt_list[1] == count:
+                            cnt += 1
                 elif count > 4:
                     # when the stone is place in one line must consider single skip for each direction
-                    for pos_neg_dir in range(-1, 2, 2):
-                        count = self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir, skip=0, include_me=True) + self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir * -1, skip=1, include_me=False)
+                    for count in cnt_list:
                         if count == 4:
                             cnt += 1
         return cnt
@@ -209,6 +220,7 @@ class Renju(mnkState):
         no_skip_count = self.countBothDirection(i,j, direction, color)
         skip_count = self.countBothDirection(i,j,direction,color, skip=1)
         if no_skip_count == 4 and skip_count == no_skip_count:
+            # this is to check both side is open
             if not self.checkSingleBlocked(i,j, direction, color, pos_neg=1) and not self.checkSingleBlocked(i,j, direction, color, pos_neg=-1):
                 return True
         return False
