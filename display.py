@@ -43,8 +43,11 @@ class MNKDisplay(tk.Frame):
                 elif self.gameState.board[r,c] == -1:
                     self.create_circle(self.bsize//2+self.bsize*c, self.bsize//2+self.bsize*r, fill='white')
                 elif Action(player=self.gameState.getCurrentPlayer(), x=r, y=c) in self.possibleMove:
-                    self.create_circle(self.bsize//2+self.bsize*c, self.bsize//2+self.bsize*r, fill='#888888')
-        
+                    if self.gameState.getCurrentPlayer() == 1:
+                        self.create_circle(self.bsize//2+self.bsize*c, self.bsize//2+self.bsize*r, fill='#444444')
+                    elif self.gameState.getCurrentPlayer() == -1:
+                        self.create_circle(self.bsize//2+self.bsize*c, self.bsize//2+self.bsize*r, fill='#AAAAAA')
+
         if self.winner != None:
             msg = self.gameState.get_winner()
             self.canv.create_rectangle(self.bsize//2, self.bsize*(self.gameState.col//2-1),  self.W - self.bsize//2, self.bsize*(self.gameState.col//2+1), fill='white')
