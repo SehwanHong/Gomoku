@@ -47,7 +47,7 @@ class Renju(mnkState):
         elif self.currentStone == BLACK:
             for i in range(self.row):
                 for j in range(self.col):
-                    if self.isAvailable(i,j) and not self.isOverline(i,j) and self.isFour(i,j, self.currentStone) <= 1: # and self.isLiveThree(i,j) and self.isLiveFour(i,j) and self.isNotOverline:
+                    if self.isAvailable(i,j) and not self.isOverline(i,j) and self.isFour(i,j, self.currentStone) <= 1 and self.isThree(i, j, self.currentStone) <= 1: # and self.isLiveThree(i,j) and self.isLiveFour(i,j) and self.isNotOverline:
                         possibleActions.append(Action(player=self.currentStone, x=i, y=j))
         else:
             raise NotImplementedError
@@ -72,7 +72,7 @@ class Renju(mnkState):
             newState.move_count += 1
             newState.currentPlayer = ( self.currentPlayer + 1 ) % 2
             newState.currentStone = newState.playerStone[newState.currentPlayer]
-            # newState._openfour()
+            newState._three()
             newState.updateWinner()
         return newState
 
@@ -120,6 +120,17 @@ class Renju(mnkState):
                     four_board[i, j] += self.isOpenFour(i,j, self.currentStone)
         print(four_board)
         return four_board
+
+    def _three(self):
+        # 하나를 뒀을 떄 5를 만들 수 있는 자리는 four 이다.
+        three_board = np.zeros((self.row, self.col))
+
+        for i in range(self.row):
+            for j in range(self.col):
+                if self.isAvailable(i, j):
+                    three_board[i, j] += self.isThree(i,j, self.currentStone)
+        print(three_board)
+        return three_board
     
     def countBothDirection(self, i, j, direction, color, skip=0):
         count = 1
@@ -147,19 +158,23 @@ class Renju(mnkState):
             delta += 1
         return count
 
-    def checkBlocked(self, i, j, direction, color):
-        return self.checkSingleBlocked(i,j,direction, color, pos_neg=1) and self.checkSingleBlocked(i,j,direction, color, pos_neg=-1)
+    def checkBlocked(self, i, j, direction, color, skip=0):
+        return self.checkSingleBlocked(i,j,direction, color, pos_neg=1, skip=skip) and self.checkSingleBlocked(i,j,direction, color, pos_neg=-1, skip=skip)
 
-    def checkSingleBlocked(self, i, j, direction, color, pos_neg=1):
+    def checkSingleBlocked(self, i, j, direction, color, pos_neg=1, skip=0):
         assert pos_neg in [-1, 1]
         delta = 1
+        check_skip = 0
         while True:
             delta_i = i + direction[0] * delta * pos_neg
             delta_j = j + direction[1] * delta * pos_neg
             if self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == color:
                 pass
             elif self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == 0:
-                return False
+                if check_skip == skip:
+                    return False
+                elif check_skip < skip:
+                    check_skip += 1
             else:
                 return True
             delta += 1
@@ -197,6 +212,25 @@ class Renju(mnkState):
             if not self.checkSingleBlocked(i,j, direction, color, pos_neg=1) and not self.checkSingleBlocked(i,j, direction, color, pos_neg=-1):
                 return True
         return False
+    
+    def isThree(self, i, j, color):
+        cnt = 0
+        directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
+        if self.isAvailable(i,j):
+            for direction in directions:
+                count = self.countBothDirection(i, j, direction, color, skip=1)
+                if count == 3:
+                    if not self.checkSingleBlocked(i, j, direction, color, pos_neg=1, skip=1) and not self.checkSingleBlocked(i, j, direction, color, pos_neg=-1, skip=1):
+                        if self.countBothDirection(i,j, direction, color) == 3:
+                            cnt += 1
+                        elif self.countSingleDirection(i, j, direction, color, pos_neg=1, skip=0, include_me=False) + self.countSingleDirection(i, j, direction, color, pos_neg=-1, skip=1, include_me=False) == 2:
+                            cnt += 1
+                        elif self.countSingleDirection(i, j, direction, color, pos_neg=1, skip=1, include_me=False) + self.countSingleDirection(i, j, direction, color, pos_neg=-1, skip=0, include_me=False) == 2:
+                            cnt += 1
+                        # cnt += 1
+                        # if self.countSingleDirection(i, j, direction, color, skip=1)
+                        #     cnt += 1
+        return cnt
 
     def isTerminal(self):
         self.updateWinner()
