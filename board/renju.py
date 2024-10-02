@@ -198,8 +198,8 @@ class Renju(mnkState):
         if self.isAvailable(i, j):
             for direction in directions:
                 myfour = self.myfourDirection(i, j, direction, color)
-                # four_def, count_list, when_skipped = self.fourByDefinitionDirection(i, j, direction, color)
-                # assert myfour == four_def, f"myfour({myfour}), four_def({four_def}), {count_list}, {when_skipped}, {i}, {j}"
+                four_def, count_list, when_skipped, blocked = self.fourByDefinitionDirection(i, j, direction, color)
+                assert myfour == four_def, f"myfour({myfour}), four_def({four_def}), {count_list}, {when_skipped}, {blocked} {i}, {j}"
                 cnt += myfour
 
         return cnt
@@ -241,15 +241,14 @@ class Renju(mnkState):
         return cnt
 
     def fourByDefinitionDirection(self, i, j, direction, color):
-        count = 1
         cnt = 0
-        count_empty = 0
-        count_list = []
+        skip_count = []
         when_skipped = []
+        blocked = []
         
         for pos_neg in range(-1, 2, 2):
             delta = 1
-            count = 1
+            count = 0
             count_empty = 0
             while True:
                 delta_i = i + direction[0] * delta * pos_neg
@@ -257,21 +256,32 @@ class Renju(mnkState):
                 if self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == color:
                     count += 1
                 elif self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == 0 and count_empty == 0:
-                    count += 1
+                    # count += 1
                     count_empty += 1
                     when_skipped.append(delta - 1)
                 else:
+                    if self.isValid(delta_i, delta_j) and (self.board[delta_i, delta_j] == color or self.board[delta_i, delta_j] == 0):
+                        blocked.append(False)
+                    else:
+                        blocked.append(True)
                     if count_empty == 0:
                         when_skipped.append(delta - 1)
-                    count_list.append(count)
+                    skip_count.append(count)
                     break
                 delta += 1
-        for count in count_list:
-            if count == 5:
+        
+        newCount = skip_count[0] + skip_count[1] + 1
+
+        if newCount == 4:
+            if not blocked[0] or not blocked[1]:
+                if when_skipped[0] + skip_count[1] == 3 or skip_count[0] + when_skipped[1] == 3:
+                    cnt += 1
+        elif newCount > 4:
+            if when_skipped[0] + skip_count[1] == 3:
                 cnt += 1
-        if when_skipped[0] + when_skipped[1] + 1 == 5:
-            cnt += 1
-        return cnt, count_list, when_skipped
+            if skip_count[0] + when_skipped[1] == 3:
+                cnt += 1
+        return cnt, skip_count, when_skipped, blocked
 
     def isOpenFour(self, i, j, color):
         directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
