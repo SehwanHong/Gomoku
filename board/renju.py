@@ -240,12 +240,14 @@ class Renju(mnkState):
                 if count == 4:
                     cnt += 1
         return cnt
-
-    def fourByDefinitionDirection(self, i, j, direction, color):
-        cnt = 0
+    
+    @staticmethod
+    def util_countDirection(board, i, j, direction, color):
         skip_count = []
         no_skip_count = []
         blocked = []
+        row, col = board.shape
+        isValid = lambda i,j :i >= 0 and j >= 0 and i < row and j < col 
         
         for pos_neg in range(-1, 2, 2):
             delta = 1
@@ -254,14 +256,14 @@ class Renju(mnkState):
             while True:
                 delta_i = i + direction[0] * delta * pos_neg
                 delta_j = j + direction[1] * delta * pos_neg
-                if self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == color:
+                if isValid(delta_i, delta_j) and board[delta_i, delta_j] == color:
                     count += 1
-                elif self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == 0 and count_empty == 0:
+                elif isValid(delta_i, delta_j) and board[delta_i, delta_j] == 0 and count_empty == 0:
                     # count += 1
                     count_empty += 1
                     no_skip_count.append(delta - 1)
                 else:
-                    if self.isValid(delta_i, delta_j) and count_empty <= 1:
+                    if isValid(delta_i, delta_j) and count_empty <= 1:
                         blocked.append(False)
                     else:
                         blocked.append(True)
@@ -271,8 +273,12 @@ class Renju(mnkState):
                     break
                 delta += 1
         
-        newCount = skip_count[0] + skip_count[1] + 1
+        return skip_count, no_skip_count, blocked
 
+    @staticmethod
+    def util_evalFour(skip_count, no_skip_count, blocked):
+        cnt = 0
+        newCount = skip_count[0] + skip_count[1] + 1
         if newCount == 4:
             if not blocked[0] or not blocked[1]:
                 if no_skip_count[0] + skip_count[1] == 3 or skip_count[0] + no_skip_count[1] == 3:
@@ -283,6 +289,10 @@ class Renju(mnkState):
             if skip_count[0] + no_skip_count[1] == 3:
                 cnt += 1
         return cnt, skip_count, no_skip_count, blocked
+
+    def fourByDefinitionDirection(self, i, j, direction, color):
+        skip_count, no_skip_count, blocked = self.util_countDirection(self.board, i, j, direction, color)
+        return self.util_evalFour(skip_count=skip_count, no_skip_count=no_skip_count, blocked=blocked)
 
     def isOpenFour(self, i, j, color):
         directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
@@ -319,6 +329,7 @@ class Renju(mnkState):
                         # if self.countSingleDirection(i, j, direction, color, skip=1)
                         #     cnt += 1
         return cnt
+
 
     def isTerminal(self):
         self.updateWinner()
