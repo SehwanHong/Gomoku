@@ -47,7 +47,7 @@ class Renju(mnkState):
         elif self.currentStone == BLACK:
             for i in range(self.row):
                 for j in range(self.col):
-                    if self.isAvailable(i,j) and not self.isOverline(i,j) and self.isFour(i,j, self.currentStone) <= 1 :# and self.isThree(i, j, self.currentStone) <= 1: # and self.isLiveThree(i,j) and self.isLiveFour(i,j) and self.isNotOverline:
+                    if self.isAvailable(i,j) and not self.isOverline(i,j) and self.isFour(i,j, self.currentStone) <= 1 and self.isThree(i, j, self.currentStone) <= 1:
                         possibleActions.append(Action(player=self.currentStone, x=i, y=j))
         else:
             raise NotImplementedError
@@ -72,7 +72,7 @@ class Renju(mnkState):
             newState.move_count += 1
             newState.currentPlayer = ( self.currentPlayer + 1 ) % 2
             newState.currentStone = newState.playerStone[newState.currentPlayer]
-            newState._four()
+            # newState._fourDefinition()
             newState.updateWinner()
         return newState
 
@@ -108,7 +108,18 @@ class Renju(mnkState):
             for j in range(self.col):
                 if self.isAvailable(i, j):
                     four_board[i, j] += self.isFour(i,j, self.currentStone)
-        print(four_board)
+        # print(four_board)
+        return four_board
+    
+    def _fourDefinition(self):
+        # 하나를 뒀을 떄 5를 만들 수 있는 자리는 four 이다.
+        four_board = np.zeros((self.row, self.col))
+
+        for i in range(self.row):
+            for j in range(self.col):
+                if self.isAvailable(i, j):
+                    four_board[i, j] += self.fourByDefinition(i,j, self.currentStone)
+        # print(four_board)
         return four_board
     
     def _openfour(self):
@@ -181,32 +192,86 @@ class Renju(mnkState):
             delta += 1
 
     def isFour(self, i, j, color):
+        """This Method is very slow, must use fourByDefinition"""
         cnt = 0
         directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
         if self.isAvailable(i, j):
             for direction in directions:
-                # check for general cases
-                count = self.countBothDirection(i, j, direction, color, skip=1)
-                # cnt_list is for considering for each direction
-                # because self countBoth Direction miss _00_?0_00_ where ? is a place of stone
-                cnt_list = []
-                for pos_neg_dir in range(-1, 2, 2):
-                    temp = self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir, skip=0, include_me=True) + self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir * -1, skip=1, include_me=False)
-                    cnt_list.append(temp)
-                if count == 4:
-                    # checkBlocked is to check if both side is closed
-                    # thus not checkBlocked means at least one side is open
-                    if not self.checkBlocked(i, j, direction, color):
-                        # checking cnt_list[0] and cnt_list[1] to check for correct four
-                        # if _0_?0_0_ where ? is not 'four' because it cannot make '5' by putting one stone
-                        if cnt_list[0] == count or cnt_list[1] == count:
-                            cnt += 1
-                elif count > 4:
-                    # when the stone is place in one line must consider single skip for each direction
-                    for count in cnt_list:
-                        if count == 4:
-                            cnt += 1
+                myfour = self.myfourDirection(i, j, direction, color)
+                # four_def, count_list, when_skipped = self.fourByDefinitionDirection(i, j, direction, color)
+                # assert myfour == four_def, f"myfour({myfour}), four_def({four_def}), {count_list}, {when_skipped}, {i}, {j}"
+                cnt += myfour
+
         return cnt
+
+    def fourByDefinition(self, i, j, color):
+        cnt = 0
+        directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
+        if self.isAvailable(i, j):
+            for direction in directions:
+                # myfour = self.myfourDirection(i, j, direction, color)
+                four_def, count_list, when_skipped = self.fourByDefinitionDirection(i, j, direction, color)
+                # assert myfour == four_def, f"myfour({myfour}), four_def({four_def}), {count_list}, {when_skipped}, {i}, {j}"
+                cnt += four_def
+        return cnt
+    
+    def myfourDirection(self, i, j, direction, color):
+        cnt = 0
+        # check for general cases
+        count = self.countBothDirection(i, j, direction, color, skip=1)
+        # cnt_list is for considering for each direction
+        # because self countBoth Direction miss _00_?0_00_ where ? is a place of stone
+        cnt_list = []
+        for pos_neg_dir in range(-1, 2, 2):
+            temp = self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir, skip=0, include_me=True) + self.countSingleDirection(i, j, direction, color, pos_neg=pos_neg_dir * -1, skip=1, include_me=False)
+            cnt_list.append(temp)
+        if count == 4:
+            # checkBlocked is to check if both side is closed
+            # thus not checkBlocked means at least one side is open
+            if not self.checkBlocked(i, j, direction, color):
+                # checking cnt_list[0] and cnt_list[1] to check for correct four
+                # if _0_?0_0_ where ? is not 'four' because it cannot make '5' by putting one stone
+                if cnt_list[0] == count or cnt_list[1] == count:
+                    cnt += 1
+        elif count > 4:
+            # when the stone is place in one line must consider single skip for each direction
+            for count in cnt_list:
+                if count == 4:
+                    cnt += 1
+        return cnt
+
+    def fourByDefinitionDirection(self, i, j, direction, color):
+        count = 1
+        cnt = 0
+        count_empty = 0
+        count_list = []
+        when_skipped = []
+        
+        for pos_neg in range(-1, 2, 2):
+            delta = 1
+            count = 1
+            count_empty = 0
+            while True:
+                delta_i = i + direction[0] * delta * pos_neg
+                delta_j = j + direction[1] * delta * pos_neg
+                if self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == color:
+                    count += 1
+                elif self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == 0 and count_empty == 0:
+                    count += 1
+                    count_empty += 1
+                    when_skipped.append(delta - 1)
+                else:
+                    if count_empty == 0:
+                        when_skipped.append(delta - 1)
+                    count_list.append(count)
+                    break
+                delta += 1
+        for count in count_list:
+            if count == 5:
+                cnt += 1
+        if when_skipped[0] + when_skipped[1] + 1 == 5:
+            cnt += 1
+        return cnt, count_list, when_skipped
 
     def isOpenFour(self, i, j, color):
         directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
