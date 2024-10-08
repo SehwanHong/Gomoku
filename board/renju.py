@@ -47,7 +47,7 @@ class Renju(mnkState):
         elif self.currentStone == BLACK:
             for i in range(self.row):
                 for j in range(self.col):
-                    if self.isAvailable(i,j) and not self.isOverline(i,j) and self.isFour(i,j, self.currentStone) <= 1 and self.isThree(i, j, self.currentStone) <= 1:
+                    if self.isPlausibleMove(i, j, self.currentStone):
                         possibleActions.append(Action(player=self.currentStone, x=i, y=j))
         else:
             raise NotImplementedError
@@ -72,8 +72,8 @@ class Renju(mnkState):
             newState.move_count += 1
             newState.currentPlayer = ( self.currentPlayer + 1 ) % 2
             newState.currentStone = newState.playerStone[newState.currentPlayer]
-            # newState._fourDefinition()
-            # newState._four()
+            newState._four()
+            newState._three()
             newState.updateWinner()
         return newState
 
@@ -98,6 +98,9 @@ class Renju(mnkState):
             return False
         return self.countConsecutive(i,j, self.board[i, j]) > 5
     
+    def isFive(self, i,j):
+        return self.countConsecutive(i, j, self.currentStone) == 5
+
     def isOverline(self, i, j):
         return self.countConsecutive(i, j, self.currentStone) > 5
 
@@ -120,7 +123,9 @@ class Renju(mnkState):
             for j in range(self.col):
                 if self.isAvailable(i, j):
                     four_board[i, j] += self.fourByDefinition(i,j, self.currentStone)
-        # print(four_board)
+        if self.currentStone == BLACK:
+            print("four_board")
+            print(four_board)
         return four_board
     
     def _openfour(self):
@@ -131,7 +136,6 @@ class Renju(mnkState):
             for j in range(self.col):
                 if self.isAvailable(i, j):
                     four_board[i, j] += self.isOpenFour(i,j, self.currentStone)
-        # print(four_board)
         return four_board
 
     def _three(self):
@@ -142,7 +146,9 @@ class Renju(mnkState):
             for j in range(self.col):
                 if self.isAvailable(i, j):
                     three_board[i, j] += self.isThree(i,j, self.currentStone)
-        print(three_board)
+        if self.currentStone == BLACK:
+            print("three board")
+            print(three_board)
         return three_board
     
     def countBothDirection(self, i, j, direction, color, skip=0):
@@ -200,7 +206,7 @@ class Renju(mnkState):
             for direction in directions:
                 myfour = self.myfourDirection(i, j, direction, color)
                 four_def, count_list, when_skipped, blocked = self.fourByDefinitionDirection(i, j, direction, color)
-                assert myfour == four_def, f"myfour({myfour}), four_def({four_def}), {count_list}, {when_skipped}, {blocked} {i}, {j}"
+                assert myfour == four_def, f"\tmyfour : {myfour}\n\tfour_def : {four_def}\n\tcount_list : {count_list}\n\twhen_skipped: {when_skipped}\n\tblocked : {blocked}\n\tdirection : {direction}\n\tplace of stone : {i}, {j}\n{self.board}"
                 cnt += myfour
 
         return cnt
@@ -253,17 +259,30 @@ class Renju(mnkState):
             delta = 1
             count = 0
             count_empty = 0
+            prev_stone = -100
             while True:
                 delta_i = i + direction[0] * delta * pos_neg
                 delta_j = j + direction[1] * delta * pos_neg
                 if isValid(delta_i, delta_j) and board[delta_i, delta_j] == color:
                     count += 1
+                    prev_stone = color
                 elif isValid(delta_i, delta_j) and board[delta_i, delta_j] == 0 and count_empty == 0:
                     # count += 1
                     count_empty += 1
+                    prev_stone = 0
                     no_skip_count.append(delta - 1)
                 else:
-                    if isValid(delta_i, delta_j) and count_empty <= 1:
+                    if isValid(delta_i, delta_j) and board[delta_i, delta_j] == -color:
+                        if count_empty == 1:
+                            blocked.append(False)
+                        else:
+                            blocked.append(True)
+                    elif not isValid(delta_i, delta_j):
+                        if count_empty == 1:
+                            blocked.append(False)
+                        else:
+                            blocked.append(True)
+                    elif isValid(delta_i, delta_j) and board[delta_i, delta_j] == 0:
                         blocked.append(False)
                     else:
                         blocked.append(True)
@@ -289,6 +308,16 @@ class Renju(mnkState):
             if skip_count[0] + no_skip_count[1] == 3:
                 cnt += 1
         return cnt, skip_count, no_skip_count, blocked
+    
+    @staticmethod
+    def util_evalOpenFour(skip_count, no_skip_count, blocked):
+        cnt = 0
+        newCount = no_skip_count[0] + no_skip_count[1] + 1
+        if newCount == 4:
+            if not blocked[0] and not blocked[1]:
+                if no_skip_count[0] + skip_count[1] == 3 or skip_count[0] + no_skip_count[1] == 3:
+                    cnt += 1
+        return cnt, skip_count, no_skip_count, blocked
 
     def fourByDefinitionDirection(self, i, j, direction, color):
         skip_count, no_skip_count, blocked = self.util_countDirection(self.board, i, j, direction, color)
@@ -303,32 +332,63 @@ class Renju(mnkState):
         return False
 
     def checkOpenFourDirection(self, i, j, direction, color):
-        no_skip_count = self.countBothDirection(i,j, direction, color)
-        skip_count = self.countBothDirection(i,j,direction,color, skip=1)
-        if no_skip_count == 4 and skip_count == no_skip_count:
-            # this is to check both side is open
-            if not self.checkSingleBlocked(i,j, direction, color, pos_neg=1) and not self.checkSingleBlocked(i,j, direction, color, pos_neg=-1):
-                return True
+        if self.countConsecutive(i,j, color) == 5:
+            return False
+        skip_count, no_skip_count, blocked = self.util_countDirection(self.board, i, j, direction, color)
+        newCount = skip_count[0] + skip_count[1] + 1
+        if not blocked[0] and not blocked[1]:
+            if newCount == 4 and sum(skip_count) == sum(no_skip_count):
+                if no_skip_count[0] + skip_count[1] == 3 or skip_count[0] + no_skip_count[1] == 3:
+                    return True
         return False
+
     
     def isThree(self, i, j, color):
-        cnt = 0
         directions = [[1, 0], [0, 1], [1, 1], [1, -1]]
+        cnt = 0
         if self.isAvailable(i,j):
             for direction in directions:
-                count = self.countBothDirection(i, j, direction, color, skip=1)
-                if count == 3:
-                    if not self.checkSingleBlocked(i, j, direction, color, pos_neg=1, skip=1) and not self.checkSingleBlocked(i, j, direction, color, pos_neg=-1, skip=1):
-                        if self.countBothDirection(i,j, direction, color) == 3:
-                            cnt += 1
-                        elif self.countSingleDirection(i, j, direction, color, pos_neg=1, skip=0, include_me=False) + self.countSingleDirection(i, j, direction, color, pos_neg=-1, skip=1, include_me=False) == 2:
-                            cnt += 1
-                        elif self.countSingleDirection(i, j, direction, color, pos_neg=1, skip=1, include_me=False) + self.countSingleDirection(i, j, direction, color, pos_neg=-1, skip=0, include_me=False) == 2:
-                            cnt += 1
-                        # cnt += 1
-                        # if self.countSingleDirection(i, j, direction, color, skip=1)
-                        #     cnt += 1
+                if self.openThreeDirection(i, j, direction, color):
+                    cnt += 1
         return cnt
+
+    def openThreeDirection(self, i, j, direction, color):
+        self.board[i,j] = color
+        for pos_neg in range(-1, 2, 2):
+            delta = 1
+            while True:
+                delta_i = i + direction[0] * delta * pos_neg
+                delta_j = j + direction[1] * delta * pos_neg
+                if self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == color:
+                    pass
+                elif self.isValid(delta_i, delta_j) and self.board[delta_i, delta_j] == 0:
+                    if self.checkOpenFourDirection(delta_i, delta_j, direction, self.currentStone):
+                        if self.isPlausibleMove(delta_i, delta_j, self.currentStone):
+                            self.board[i,j] = EMPTY
+                            return True
+                    break
+                else:
+                    break
+                delta += 1
+        self.board[i,j] = EMPTY
+        return False
+
+
+    def isPlausibleMove(self, i, j, color):
+        if self.isFive(i, j):
+            return True
+        elif self.isOverline(i, j):
+            if color == WHITE:
+                return True
+            else:
+                return False
+        elif self.isFour(i, j, color) > 1 or self.isThree(i, j, color) > 1:
+            if color == WHITE:
+                return True
+            else:
+                return False
+        else:
+            return True
 
 
     def isTerminal(self):
