@@ -1,7 +1,7 @@
 import tkinter as tk
 from action import Action
 # from DQN import DQNPlayer
-from mcts import MCTS
+from player import MCTS
 
 class MNKDisplay(tk.Frame):
     def __init__(self, master, game, m, n, k, width=720, height=720):

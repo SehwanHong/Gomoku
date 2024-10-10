@@ -3,7 +3,7 @@ import math
 import random
 from treenode import treeNode
 from policy import randomPolicy
-from player import Player
+from .player import Player
 from tqdm import tqdm
 
 class MCTS(Player):

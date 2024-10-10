@@ -17,6 +17,7 @@ class Renju(mnkState):
         self.playerStone = [BLACK, WHITE]
     
     def getPossibleActions(self):
+        # Get possible Actions for player
         possibleActions = []
         if self.winner != None:
             return possibleActions
@@ -39,6 +40,8 @@ class Renju(mnkState):
             elif self.move_count == 3 and self.currentPlayer == SECOND_PLAYER:
                 possibleActions.append(Action(player=self.currentStone, x=-1, y=-1))
         
+        # For renju rule, white have no violation
+        # For renju rule, black have double three, double four, overline violation
         if self.currentStone == WHITE:
             for i in range(self.row):
                 for j in range(self.col):
@@ -54,12 +57,15 @@ class Renju(mnkState):
         return possibleActions
 
     def isValid(self, i, j):
+        # Check if i,j is inside the board
         return i >= 0 and j >= 0 and i < self.row and j < self.col
 
     def isAvailable(self, i, j):
+        # check if i,j is empty and able to place a stone
         return super().isAvailable(i, j)
     
     def takeAction(self, action):
+        # For taking action, create a copy
         newState = deepcopy(self)
         if self.move_count == 3 and action.x == -1 and action.y == -1:
             newState.currentPlayer = FIRST_PLAYER
@@ -72,8 +78,8 @@ class Renju(mnkState):
             newState.move_count += 1
             newState.currentPlayer = ( self.currentPlayer + 1 ) % 2
             newState.currentStone = newState.playerStone[newState.currentPlayer]
-            newState._four()
-            newState._three()
+            # newState._four()
+            # newState._three()
             newState.updateWinner()
         return newState
 
@@ -112,7 +118,9 @@ class Renju(mnkState):
             for j in range(self.col):
                 if self.isAvailable(i, j):
                     four_board[i, j] += self.isFour(i,j, self.currentStone)
-        # print(four_board)
+        if self.currentStone == BLACK:
+            print("four_board")
+            print(four_board)
         return four_board
     
     def _fourDefinition(self):
@@ -123,9 +131,6 @@ class Renju(mnkState):
             for j in range(self.col):
                 if self.isAvailable(i, j):
                     four_board[i, j] += self.fourByDefinition(i,j, self.currentStone)
-        if self.currentStone == BLACK:
-            print("four_board")
-            print(four_board)
         return four_board
     
     def _openfour(self):
