@@ -16,5 +16,8 @@ srun --container-image /purestorage/project/shhong/enroot_images/torch2.sqsh \
     --no-container-mount-home \
     --container-writable \
     --container-workdir /purestorage/project/shhong/Gomoku/ \
-    bash -c "python server_main.py" 
+    bash -c "
+    pip install lightning;
+    python server_main.py;
+    " 
     
