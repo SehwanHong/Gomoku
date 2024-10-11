@@ -21,7 +21,6 @@ class SelfPlay:
 
             if print_state:
                 self.current_state.printState()
-                print(len(self.current_state.getPossibleActions()))
                 print(act)
             
             self.current_state = self.current_state.takeAction(act)
@@ -30,4 +29,5 @@ class SelfPlay:
                 if print_state:
                     self.current_state.printState()
                 msg, winner = self.current_state.get_winner(getValue=True)
+                print(msg)
                 return winner
