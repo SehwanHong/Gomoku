@@ -50,7 +50,7 @@ class Renju(mnkState):
         elif self.currentStone == BLACK:
             for i in range(self.row):
                 for j in range(self.col):
-                    if self.isPlausibleMove(i, j, self.currentStone):
+                    if self.isPlausibleMove(i, j, self.currentStone) and self.isAvailable(i,j):
                         possibleActions.append(Action(player=self.currentStone, x=i, y=j))
         else:
             raise NotImplementedError
@@ -62,8 +62,11 @@ class Renju(mnkState):
 
     def isAvailable(self, i, j):
         # check if i,j is empty and able to place a stone
-        return super().isAvailable(i, j)
+        return self.board[i, j] == EMPTY
     
+    def deepcopy(self):
+        return deepcopy(self)
+
     def takeAction(self, action):
         # For taking action, create a copy
         newState = deepcopy(self)

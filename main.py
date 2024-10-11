@@ -11,15 +11,12 @@ def playGraphicMNK():
     display.mainloop()
     root.mainloop()
 
-def DQN_selfplay(boardState = Renju):
+def DQN_selfplay(boardState = Renju, player=None):
     boardState = boardState
-    player = DQNPlayer(
-        searchLimit=100,
-        store=True,
-    )
+    assert player is not None
 
     SP = SelfPlay(player)
-    winner = SP.play(game=boardState)
+    winner = SP.play(game=boardState, print_state=True)
     if winner == 1:
         print("p1 win!")
     elif winner == 0:
@@ -30,4 +27,10 @@ def DQN_selfplay(boardState = Renju):
 
 if __name__ == "__main__":
     # playGraphicMNK()
-    DQN_selfplay()
+    player = DQNPlayer(
+        searchLimit=90,
+        store=True,
+        timeSearch=True,
+        device='cuda'
+    )
+    DQN_selfplay(player=player)

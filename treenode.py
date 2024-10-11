@@ -29,12 +29,15 @@ class DQNNode():
         self.children = {}
 
     def __str__(self):
+        if type(self.pQ) == int:
+            pQ = self.pQ
+        else:
+            pQ = self.pQ.sum()
         s=[]
-        s.append("totalReward: %s"%(self.totalReward))
         s.append("number of visits: %d"%(self.N))
         s.append("the total value of the next state: %f"%(self.W))
         s.append("the mean value of the next state: %f"%(self.Q))
-        s.append("the probable value of the current state: %f"%(self.pQ))
+        s.append("the probable value of the current state: %f"%(pQ))
         s.append("isTerminal: %s"%(self.isTerminal))
-        s.append("possibleActions: %s"%(self.children.keys()))
-        return "%s: {%s}"%(self.__class__.__name__, ', '.join(s))
+        s.append("possibleActions: %f"%(len(self.children.keys())))
+        return "%s: {%s}"%(self.__class__.__name__, '\n'.join(s))

@@ -1,3 +1,4 @@
+from action import Action
 from .player import Player
 from model import DQN
 from board import boardState
@@ -9,7 +10,6 @@ import random
 import time
 import torch
 from tqdm import tqdm
-import ray
 
 class DQNPlayer(Player):
     save_format = '%y%m%d%H%M%S'
@@ -38,7 +38,6 @@ class DQNPlayer(Player):
         self.device = device
 
         self.DQNnet.to(device=self.device)
-        ray.init(num_cpus = 10)
 
     def reset(self, gameState):
         self.prevStates = []
@@ -51,7 +50,7 @@ class DQNPlayer(Player):
         self.DQNnet = DQN()
         self.DQNnet.load_state_dict(torch.load(weightfile))
     
-    def search(self, state, train=True, self_play=True):
+    def search(self, state, train=True, print_state=True):
         t = time.time()
         i = 0
         if self.timeSearch:
@@ -66,9 +65,9 @@ class DQNPlayer(Player):
                 self.executeRound()
         t2 = time.time()-t
         print("\t took {} sec".format(t2))
-
-        print(self.root)
         
+        if print_state:
+            print(self.root)
         action = self.getBestChild(self.root, deterministic=not train)
         self.playAction(action)
 
@@ -87,7 +86,11 @@ class DQNPlayer(Player):
     def playAction(self, action):
         # Reuse previous search results
         self.root = self.root.children[action]
+        
+        parentNode = self.root.parent
         self.root.parent = None
+
+        del parentNode
     
     def executeRound(self):
         """
@@ -95,7 +98,7 @@ class DQNPlayer(Player):
         """
         node, reward = self.selectNode(self.root)
         # roll out using DQN funciton
-        self.backpropogate(node, reward)
+        __class__.backpropogate(node, reward)
 
     def selectNode(self, node):
         # if not expended and not terminal find node that is best
@@ -104,11 +107,11 @@ class DQNPlayer(Player):
         return self.expand(node)
 
     def expand(self, node):
-        actions = node.state.getPossibleActions()
+        temp_state = node.state.deepcopy()
+        actions = temp_state.getPossibleActions()
         if len(actions) == 0:
             return node, node.state.winner * node.state.currentStone
         else:
-            start = time.time()
             gameState = self.generateGameState(node) #Generate Game State
             gameState = torch.from_numpy(gameState).to(device=self.device)
             prediction = self.DQNnet(gameState)
@@ -117,17 +120,19 @@ class DQNPlayer(Player):
             node.pQ = Q_value
 
             # make expand with Q and U value
-            newNodes = ray.get([__class__.createNode.remote(node, action) for action in actions])
-            
-            for idx, action in tqdm(enumerate(actions), leave=False):
-                if action not in node.children:
-                    node.children[action] = newNodes[idx]
-                    node.children[action].pQ = Q_value[7*action.x + action.y]
+            # newNodes = ray.get([__class__.createNode.remote(node, action) for action in actions])
+
+            # for idx, action in enumerate(actions):
+            #     if action not in node.children:
+            #         # newNode = __class__.createNode(node, action)
+            #         # node.children[action] = newNode
+            #         node.children[action] = newNodes[idx]
+            #         node.children[action].pQ = Q_value[7*action.x + action.y]
 
             return node, Q_value.sum()
     
     @staticmethod
-    @ray.remote
+    # @ray.remote
     def createNode(node, action):
         return DQNNode(node.state.takeAction(action), node)
 
@@ -148,7 +153,7 @@ class DQNPlayer(Player):
         x = len(self.prevStates)
         for i in range(count,3):
             if x - i > 0:
-                gameStates.append(self.prevStates[x - i])
+                gameStates.append(self.prevStates[x - i].board)
         return self.listToGameState(gameStates, player)
     
     def listToGameState(self, gameStates, player):
@@ -162,7 +167,7 @@ class DQNPlayer(Player):
         gameState[-1,:,:] = player
         return gameState.reshape((1, 7, base[0], base[1]))
 
-    @staticmethod
+    @staticmethod 
     def backpropogate(node, reward):
         r = reward
         while node is not None:
@@ -175,18 +180,35 @@ class DQNPlayer(Player):
     @staticmethod
     def evaluateNode(node, explorationConstant):
         # Select move with most visits if competitive or select move with categorical distribution
-        bestValue = float("-inf")
-        bestNodes = []
-        for action, child in node.children.items():
-            # nodeValue = node.state.getcurrentStone() * child.Q + self.explorationConstant * child.P /(1 + child.N)
-            nodeValue = __class__.calculateQValue(child, explorationConstant, node.pQ[7*action.x + action.y])
-            if nodeValue > bestValue:
-                bestValue = nodeValue
-                bestNodes = [child]
-            elif nodeValue == bestValue:
-                bestNodes.append(child)
-        
-        return random.choice(bestNodes)
+        # if len(node.children) > 0:
+        if len(node.children) > len(node.state.getPossibleActions()):
+            raise ValueError
+        elif len(node.children) == len(node.state.getPossibleActions()):
+            bestValue = float("-inf")
+            bestNodes = []
+            for action, child in node.children.items():
+                # nodeValue = node.state.getcurrentStone() * child.Q + self.explorationConstant * child.P /(1 + child.N)
+                nodeValue = __class__.calculateQValue(child, explorationConstant, node.pQ[7*action.x + action.y])
+                if nodeValue > bestValue:
+                    bestValue = nodeValue
+                    bestNodes = [child]
+                elif nodeValue == bestValue:
+                    bestNodes.append(child)
+            
+            return random.choice(bestNodes)
+        else:
+            possibleMoves = node.state.getPossibleActions()
+            new_pQ = node.pQ.clone()
+            while True:
+                arg_xy = torch.argmax(new_pQ)
+                action = Action(node.state.currentStone, arg_xy//node.state.row, arg_xy%node.state.col)
+                if action in possibleMoves and action not in node.children:
+                    bestNode = __class__.createNode(node, action)
+                    node.children[action] = bestNode
+                    return bestNode
+                else:
+                    new_pQ[arg_xy] = float("-inf")
+                    
 
     @staticmethod
     def calculateQValue(node, explorationConstant, parentpQ):
