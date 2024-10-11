@@ -31,6 +31,6 @@ if __name__ == "__main__":
         searchLimit=90,
         store=True,
         timeSearch=True,
-        device='cuda'
+        device='cpu'
     )
     DQN_selfplay(player=player)
