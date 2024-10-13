@@ -410,10 +410,6 @@ class Renju(mnkState):
             return self.winner
     
     def updateWinner(self):
-        if len(self.getPossibleActions()) == 0:
-            self.winner = 0
-            return self.winner
-
         for i in range(self.row):
             for j in range(self.col):
                 if self.board[i][j] == BLACK and self.five(i,j):
@@ -428,6 +424,9 @@ class Renju(mnkState):
                     pass
         
         self.winner = None
+        if len(self.getPossibleActions()) == 0:
+            self.winner = 0
+            return self.winner
         return self.winner
     
     def get_winner(self, getValue=False):
