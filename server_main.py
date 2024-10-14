@@ -16,7 +16,7 @@ def DQN_selfplay(boardState = Renju, player=None):
         print("It is a tie!")
     else:
         print("p2 win!")
-    player.saveGamePlay(winner)
+    player.saveGamePlay()
 
 if __name__ == "__main__":
     # playGraphicMNK()
