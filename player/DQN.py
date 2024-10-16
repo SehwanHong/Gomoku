@@ -165,10 +165,9 @@ class DQNPlayer(Player):
         base = gameStates[0].shape
         gameState = np.zeros((7, base[0], base[1]), dtype=np.float32)
         i = 0
-        for gs in gameStates:
-            gameState[i, :, :] = gs > 0
-            gameState[i+3, : , :] = gs < 0
-            i += 0
+        for idx, gs in enumerate(gameStates):
+            gameState[idx, :, :] = gs > 0
+            gameState[idx+3, : , :] = gs < 0
         gameState[-1,:,:] = player
         return gameState.reshape((1, 7, base[0], base[1]))
 
