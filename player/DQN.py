@@ -10,6 +10,7 @@ import random
 import time
 import torch
 from tqdm import tqdm
+import os
 
 class DQNPlayer(Player):
     save_format = '%y%m%d%H%M%S'
@@ -20,7 +21,8 @@ class DQNPlayer(Player):
             timeSearch=False,
             weightfile=None,
             store = False,
-            device = 'mps'
+            device = 'mps',
+            save_dir = "./data/"
         ):
         if weightfile == None:
             self.DQNnet = DQN()
@@ -35,6 +37,7 @@ class DQNPlayer(Player):
         self.explorationConstant = math.sqrt(2)
         
         self.store = store
+        self.save_dir = save_dir
         self.device = device
 
         self.DQNnet.to(device=self.device)
@@ -110,7 +113,7 @@ class DQNPlayer(Player):
         temp_state = node.state.deepcopy()
         actions = temp_state.getPossibleActions()
         if len(actions) == 0:
-            return node, node.state.winner * node.state.currentStone
+            return node, node.state.winner * node.state.currentStone * 1e2
         else:
             gameState = self.generateGameState(node) #Generate Game State
             gameState = torch.from_numpy(gameState).to(device=self.device)
@@ -137,7 +140,9 @@ class DQNPlayer(Player):
         return DQNNode(node.state.takeAction(action), node)
 
     def saveGamePlay(self):
-        np.savez(time.strftime(DQNPlayer.save_format, self.gamePlayStartTime), board=self.prevStates, value=self.pred_Q_value)
+        filename = time.strftime(DQNPlayer.save_format, self.gamePlayStartTime) + ".npz"
+        filepath = os.path.join(self.save_dir, filename)
+        np.savez(filepath, board=self.prevStates, value=self.pred_Q_value)
 
     def generateGameState(self, node):
         gameStates = []
