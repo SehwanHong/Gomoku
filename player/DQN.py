@@ -59,19 +59,19 @@ class DQNPlayer(Player):
         if self.timeSearch:
             timeLimit = time.time() + self.searchLimit
             while time.time() < timeLimit:
-                print("\rsearch {} th".format(i+1), end='')
-                self.executeRound()
+                # print("\rsearch {} th".format(i+1), end='')
+                self.executeRound(deterministic=not train)
                 i += 1
         else:
             for i in tqdm(range(self.searchLimit)):
                 # print("\rsearch {} th".format(i+1), end='')
-                self.executeRound()
+                self.executeRound(deterministic=not train)
         t2 = time.time()-t
         print("\t took {} sec".format(t2))
         
         if print_state:
             print(self.root)
-        action = self.getBestChild(self.root, deterministic=not train)
+        action = self.getBestChild(self.root, self.explorationConstant, deterministic=not train)
         self.playAction(action)
 
         # update game state and store
@@ -95,18 +95,18 @@ class DQNPlayer(Player):
 
         del parentNode
     
-    def executeRound(self):
+    def executeRound(self, deterministic = True):
         """
             execute a selection-expansion-simulation-backpropagation round
         """
-        node, reward = self.selectNode(self.root)
+        node, reward = self.selectNode(self.root, deterministic)
         # roll out using DQN funciton
         __class__.backpropogate(node, reward)
 
-    def selectNode(self, node):
+    def selectNode(self, node, deterministic = True):
         # if not expended and not terminal find node that is best
         while not node.N == 0 and not node.isTerminal:
-            node = self.evaluateNode(node, self.explorationConstant)
+            node = self.evaluateNode(node, self.explorationConstant, deterministic)
         return self.expand(node)
 
     def expand(self, node):
@@ -183,24 +183,14 @@ class DQNPlayer(Player):
             r *= -1
     
     @staticmethod
-    def evaluateNode(node, explorationConstant):
+    def evaluateNode(node, explorationConstant, deterministic = True):
         # Select move with most visits if competitive or select move with categorical distribution
         # if len(node.children) > 0:
         if len(node.children) > len(node.state.getPossibleActions()):
             raise ValueError
         elif len(node.children) == len(node.state.getPossibleActions()):
-            bestValue = float("-inf")
-            bestNodes = []
-            for action, child in node.children.items():
-                # nodeValue = node.state.getcurrentStone() * child.Q + self.explorationConstant * child.P /(1 + child.N)
-                nodeValue = __class__.calculateQValue(child, explorationConstant, node.pQ[7*action.x + action.y])
-                if nodeValue > bestValue:
-                    bestValue = nodeValue
-                    bestNodes = [child]
-                elif nodeValue == bestValue:
-                    bestNodes.append(child)
-            
-            return random.choice(bestNodes)
+            action = __class__.getBestChild(node, explorationConstant, deterministic)
+            return node.children[action]
         else:
             possibleMoves = node.state.getPossibleActions()
             new_pQ = node.pQ.clone()
@@ -220,12 +210,12 @@ class DQNPlayer(Player):
         return -1 * node.Q + explorationConstant * parentpQ /(1 + node.N)
     
     @staticmethod
-    def getBestChild(node, deterministic=True):
+    def getBestChild(node, explorationConstant, deterministic=True):
         if deterministic:
             bestValue = 0
             bestNodes = []
             for action, child in node.children.items():
-                nodeValue = child.N
+                nodeValue = __class__.calculateQValue(child, explorationConstant, node.pQ[7*action.x + action.y])
                 if child.N > bestValue:
                     bestValue = nodeValue
                     bestNodes = [action]
