@@ -113,7 +113,7 @@ class DQNPlayer(Player):
         temp_state = node.state.deepcopy()
         actions = temp_state.getPossibleActions()
         if len(actions) == 0:
-            return node, node.state.winner * node.state.currentStone * 1e2
+            return node, node.state.winner * 1e2
         else:
             gameState = self.generateGameState(node) #Generate Game State
             gameState = torch.from_numpy(gameState).to(device=self.device)
