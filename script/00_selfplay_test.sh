@@ -1,12 +1,12 @@
 #!/bin/bash -l
 
-##SBATCH --nodelist=nv180
+#SBATCH --nodelist=aten234 #aten228,aten230,aten232,aten234,aten236,aten238
 
 #SBATCH --time=10:00:00
-#SBATCH -p 40g
+#SBATCH -p a10
 #SBATCH --nodes=1            # This needs to match Trainer(num_nodes=...)
 #SBATCH --ntasks-per-node=1  # This needs to match Trainer(devices=...)
-#SBATCH --mem=4gb
+#SBATCH --mem=8gb
 #SBATCH --cpus-per-task=4
 #SBATCH -o ./logs/selfplay_%A.txt
 
