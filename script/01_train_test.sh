@@ -22,6 +22,5 @@ srun --container-image /purestorage/project/shhong/enroot_images/torch2.sqsh \
     bash -c "
     pip install lightning;
     pip install wandb;
-    python train.py --run_name $RUN_NAME --batch_size 32 --lr 1e-3 --num_worker 8 ;
+    python train.py --run_name $RUN_NAME --batch_size 32 --lr 1e-3 --num_worker 8 --total_epoch 20;
     " 
-    

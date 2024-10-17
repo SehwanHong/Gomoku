@@ -70,7 +70,7 @@ if __name__ == '__main__':
         lr=first_lr, momentum=0.9, weight_decay=5e-4, nesterov=False
     )
 
-    for epoch in range(config.epoch):
+    for epoch in range(config.total_epoch):
         dataset = GomokuDataset(
             save_dir=config.data_dir,
             start = newest_time,
