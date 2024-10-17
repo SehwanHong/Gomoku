@@ -83,8 +83,8 @@ def parse_args():
     parser.add_argument('--time_search', action='store_true', help="change search from iteration to time")
 
     parser.add_argument('--iter', default=10, help='iteration number')
-    parser.add_arguement('--self_play', action="store_true" , help='option for selfplay')
-    parser.add_arguement('--evaluate_model', action="store_true" , help='option for evaluating two model')
+    parser.add_argument('--self_play', action="store_true" , help='option for selfplay')
+    parser.add_argument('--evaluate_model', action="store_true" , help='option for evaluating two model')
     return parser.parse_args()
 
 if __name__ == "__main__":
