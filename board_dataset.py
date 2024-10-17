@@ -3,6 +3,7 @@ import time
 import os
 from glob import glob
 import numpy as np
+from utils import isCorrectTime
 
 class GomokuDataset(Dataset):
     def __init__(
@@ -16,7 +17,7 @@ class GomokuDataset(Dataset):
             __class__.isCorrectTime(start)
         else:
             start = "000000000000"
-        if end is not None:
+        if end is not None and end is not '000000000000':
             __class__.isCorrectTime(end)
         else:
             end = "991231235959"
@@ -68,22 +69,6 @@ class GomokuDataset(Dataset):
         return gameState, value
 
     @staticmethod
-    def isCorrectTime(time_str):
-        assert len(time_str) == 12
-        YY = time_str[:2]
-        assert int(YY) >= 0 and int(YY) <= 99
-        MM = time_str[2:4]
-        assert int(MM) >= 1 and int(MM) <= 12
-        DD = time_str[4:6]
-        assert int(DD) >= 1 and int(DD) <= 31
-        HH = time_str[6:8]
-        assert int(HH) >= 0 and int(HH) <= 23
-        mm = time_str[8:10]
-        assert int(mm) >= 0 and int(mm) <= 59
-        SS = time_str[10:12]
-        assert int(SS) >= 0 and int(SS) <= 59
-
-    @staticmethod
     def getFiles(dir, start, end):
         """
         This function retrieves all image files within a folder using glob.
@@ -97,7 +82,7 @@ class GomokuDataset(Dataset):
         for file_path in glob(os.path.join(dir, f"**/*.npz"), recursive=True):
             filename = os.path.basename(file_path)
             time_created = filename[:-4]
-            __class__.isCorrectTime(time_created)
+            isCorrectTime(time_created)
             if int(time_created) >= int(start) and int(time_created) <= int(end):
                 board_files.append(file_path)
         return board_files
