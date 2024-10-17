@@ -6,8 +6,8 @@
 #SBATCH -p 40g
 #SBATCH --nodes=1            # This needs to match Trainer(num_nodes=...)
 #SBATCH --ntasks-per-node=1  # This needs to match Trainer(devices=...)
-#SBATCH --mem=8gb
-#SBATCH --cpus-per-task=1
+#SBATCH --mem=4gb
+#SBATCH --cpus-per-task=4
 #SBATCH -o ./logs/selfplay_%A.txt
 
 # run script from above
