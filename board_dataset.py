@@ -14,11 +14,11 @@ class GomokuDataset(Dataset):
         ):
         super().__init__()
         if start is not None:
-            __class__.isCorrectTime(start)
+            isCorrectTime(start)
         else:
             start = "000000000000"
         if end is not None and end is not '000000000000':
-            __class__.isCorrectTime(end)
+            isCorrectTime(end)
         else:
             end = "991231235959"
 
