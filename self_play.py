@@ -18,12 +18,12 @@ class SelfPlay:
         while True:
             player = next(alternator)
             act = player.search(self.current_state, train=False, print_state=print_state)
+            
+            self.current_state = self.current_state.takeAction(act)
 
             if print_state:
                 self.current_state.printState()
                 print(act)
-            
-            self.current_state = self.current_state.takeAction(act)
 
             if self.current_state.isTerminal():
                 if print_state:

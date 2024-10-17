@@ -72,7 +72,7 @@ class DQNPlayer(Player):
         if print_state:
             print(self.root)
         action = self.getBestChild(self.root, self.explorationConstant, deterministic=not train)
-        self.playAction(action)
+        self.playAction(action, preserve=False)
 
         # update game state and store
         # store gamestate and action
@@ -86,14 +86,18 @@ class DQNPlayer(Player):
 
         return action
     
-    def playAction(self, action):
+    def playAction(self, action, preserve = True):
         # Reuse previous search results
-        self.root = self.root.children[action]
-        
-        parentNode = self.root.parent
-        self.root.parent = None
+        if preserve:
+            self.root = self.root.children[action]
+            
+            parentNode = self.root.parent
+            self.root.parent = None
 
-        del parentNode
+            del parentNode
+        else:
+            self.root = self.createNode(self.root, action)
+            self.root.parent = None
     
     def executeRound(self, deterministic = True):
         """
