@@ -5,13 +5,25 @@ from self_play import SelfPlay, EvaluatePlay
 from utils import get_newest_model
 import argparse
 
-def DQN_selfplay(boardState = Renju, player=None, print_state=False, iter=10):
+def DQN_selfplay(
+        boardState = Renju,
+        player=None,
+        print_state=False,
+        iter=10,
+        update_model=False,
+        model_dir = None,
+        train = True
+    ):
     boardState = boardState
     assert player is not None
 
     SP = SelfPlay(player)
     for i in range(iter):
-        winner = SP.play(game=boardState, print_state=print_state)
+        winner = SP.play(
+            game=boardState,
+            train = train,
+            print_state=print_state,
+        )
         if winner == 1:
             print("p1 win!")
         elif winner == 0:
@@ -19,6 +31,10 @@ def DQN_selfplay(boardState = Renju, player=None, print_state=False, iter=10):
         else:
             print("p2 win!")
         player.saveGamePlay()
+        if update_model:
+            weightFile, weightFile_old = get_model_path(model_dir=model_dir)
+            if weightFile is not None:
+                player.loadDQN(weightFile)
 
 def DQN_evaluateplay(boardState = Renju, player_1=None, player_2=None, print_state=False, iter=10):
     boardState = boardState
@@ -74,7 +90,7 @@ def DQN_evaluateplay(boardState = Renju, player_1=None, player_2=None, print_sta
 def parse_args():
     parser = argparse.ArgumentParser(description="Train SVM argparser")
     parser.add_argument('--data_dir', default='./data/', help="data directory")
-    parser.add_argument('--model_dir', default='./model/', help="model directory")
+    parser.add_argument('--model_dir', default='./model_save/', help="model directory")
 
     parser.add_argument('--store_game_play', action="store_true", help="option for storing gameplay")
     parser.add_argument('--print_state', action="store_true", help="option for printing board")
@@ -84,8 +100,21 @@ def parse_args():
 
     parser.add_argument('--iter', default=10, type=int, help='iteration number')
     parser.add_argument('--self_play', action="store_true" , help='option for selfplay')
+    parser.add_argument('--train', action="store_true" , help='option for selfplay')
+    parser.add_argument('--update_model', action="store_true" , help='option for selfplay')
     parser.add_argument('--evaluate_model', action="store_true" , help='option for evaluating two model')
     return parser.parse_args()
+
+def get_model_path(model_dir='./model_save/'):
+    start, end = get_newest_model(model_dir=model_dir)
+    weightFile = None
+
+    if start != '000000000000':
+        weightFile_old = model_dir + end + '.pth'
+
+    if end != '000000000000':
+        weightFile = model_dir + end + '.pth'
+    return weightFile, weightFile_old
 
 if __name__ == "__main__":
     config = parse_args()
@@ -113,6 +142,9 @@ if __name__ == "__main__":
             player=player,
             print_state=config.print_state,
             iter=config.iter,
+            update_model=config.update_model,
+            model_dir=config.model_dir,
+            train=config.train,
         )
 
     if config.evaluate_model:

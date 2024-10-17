@@ -10,14 +10,14 @@ class SelfPlay:
         while True:
             yield self.p
     
-    def play(self, game=boardState, print_state=False):
+    def play(self, game=boardState, train=False, print_state=False):
         alternator = self.alternate()
         self.current_state = game()
         self.p.reset(self.current_state)
 
         while True:
             player = next(alternator)
-            act = player.search(self.current_state, train=False, print_state=print_state)
+            act = player.search(self.current_state, train=train, print_state=print_state)
             
             self.current_state = self.current_state.takeAction(act)
 
