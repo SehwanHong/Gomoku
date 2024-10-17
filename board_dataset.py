@@ -13,11 +13,11 @@ class GomokuDataset(Dataset):
             end = 'YYMMDDHHmmSS',
         ):
         super().__init__()
-        if start is not None and start is not '000000000000':
+        if start is not None and start != '000000000000':
             isCorrectTime(start)
         else:
             start = "000000000000"
-        if end is not None and end is not '000000000000':
+        if end is not None and end != '000000000000':
             isCorrectTime(end)
         else:
             end = "991231235959"

@@ -93,10 +93,10 @@ if __name__ == "__main__":
     start, end = get_newest_model(model_dir=config.model_dir)
     weightFile = None
 
-    if start is not '000000000000':
+    if start != '000000000000':
         weightFile_old = config.model_dir + end + '.pth'
 
-    if end is not '000000000000':
+    if end != '000000000000':
         weightFile = config.model_dir + end + '.pth'
 
     if config.self_play:
