@@ -102,7 +102,9 @@ if __name__ == '__main__':
                 #     'loss' : loss,
                 # })
                 print(f"iter : {cur_iter :08d} \t loss : {loss:08f}")
-            
+
+            cur_iter += 1
+
             loss.backward()
             optimizer.step()
 
