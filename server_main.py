@@ -108,7 +108,7 @@ def parse_args():
 def get_model_path(model_dir='./model_save/'):
     start, end = get_newest_model(model_dir=model_dir)
     weightFile = None
-
+    weightFile_old = None
     if start != '000000000000':
         weightFile_old = model_dir + end + '.pth'
 
