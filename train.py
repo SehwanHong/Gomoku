@@ -130,4 +130,4 @@ if __name__ == '__main__':
         filename = time.strftime(save_format, curr_time) + ".pth"
         filepath = os.path.join(config.model_dir, filename)
         
-        torch.save(model.state_dict, filepath)
+        torch.save(model.state_dict(), filepath)
