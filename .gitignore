@@ -353,3 +353,4 @@ MigrationBackup/
 # databranch
 ./log/**
 ./data/**
+./model/**
