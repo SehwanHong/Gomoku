@@ -4,6 +4,7 @@ import os
 from glob import glob
 import numpy as np
 from utils import isCorrectTime
+import torch
 
 class GomokuDataset(Dataset):
     def __init__(
@@ -67,7 +68,8 @@ class GomokuDataset(Dataset):
 
     def __getitem__(self, index):
         gameState, value = self.board_lists[index]
-        return gameState, value
+        
+        return torch.from_numpy(gameState.astype(np.float32)), torch.from_numpy(value.astype(np.float32))
 
     @staticmethod
     def getFiles(dir, start, end):
