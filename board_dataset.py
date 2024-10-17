@@ -24,7 +24,7 @@ class GomokuDataset(Dataset):
             end = "991231235959"
 
         board_files = GomokuDataset.getFiles(save_dir, start, end)
-        print(board_files)
+        print(f"{start} {end} {len(board_files)}")
         assert len(board_files) > 0
 
         self.board_lists = GomokuDataset.getGameStates(board_files)
