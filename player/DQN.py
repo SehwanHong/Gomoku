@@ -67,9 +67,8 @@ class DQNPlayer(Player):
                 # print("\rsearch {} th".format(i+1), end='')
                 self.executeRound(deterministic=not train)
         t2 = time.time()-t
-        print("\t took {} sec".format(t2))
-        
         if print_state:
+            print(f"took {t2} sec, iteration {i}")
             print(self.root)
         action = self.getBestChild(self.root, self.explorationConstant, deterministic=not train)
         self.playAction(action, preserve=False)
@@ -144,9 +143,10 @@ class DQNPlayer(Player):
         return DQNNode(node.state.takeAction(action), node)
 
     def saveGamePlay(self):
-        filename = time.strftime(DQNPlayer.save_format, self.gamePlayStartTime) + ".npz"
-        filepath = os.path.join(self.save_dir, filename)
-        np.savez(filepath, board=self.prevStates, value=self.pred_Q_value)
+        if self.store:
+            filename = time.strftime(DQNPlayer.save_format, self.gamePlayStartTime) + ".npz"
+            filepath = os.path.join(self.save_dir, filename)
+            np.savez(filepath, board=self.prevStates, value=self.pred_Q_value)
 
     def generateGameState(self, node):
         gameStates = []

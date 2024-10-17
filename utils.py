@@ -1,3 +1,6 @@
+import os
+from glob import glob
+
 def isCorrectTime(time_str):
     assert len(time_str) == 12
     YY = time_str[:2]
@@ -12,3 +15,16 @@ def isCorrectTime(time_str):
     assert int(mm) >= 0 and int(mm) <= 59
     SS = time_str[10:12]
     assert int(SS) >= 0 and int(SS) <= 59
+
+def get_newest_model(model_dir="./model/"):
+    model_list = glob(model_dir + "**.pth", recursive=True)
+    newest = '000000000000'
+    second_newest = '000000000000'
+    for model in model_list:
+        filename = os.path.basename(model)
+        time_created = filename[:-4]
+        isCorrectTime(time_created)
+        if int(time_created) >= int(newest):
+            second_newest = newest
+            newest = time_created
+    return second_newest, newest

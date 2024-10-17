@@ -18,6 +18,6 @@ srun --container-image /purestorage/project/shhong/enroot_images/torch2.sqsh \
     --container-workdir /purestorage/project/shhong/Gomoku/ \
     bash -c "
     pip install lightning;
-    python server_main.py;
+    python server_main.py --data_dir ./data/ --model_dir ./model/ --store_game_play --search_limit 90 --time_search --iter 2 --self_play;
     " 
     

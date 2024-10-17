@@ -7,7 +7,7 @@ import argparse
 import wandb
 from glob import glob
 import os
-from utils import isCorrectTime
+from utils import isCorrectTime, get_newest_model
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train SVM argparser")
@@ -22,20 +22,6 @@ def parse_args():
     parser.add_argument('--num_worker', default=8, type=int, help="number of worker")
     parser.add_argument('--dropout_rate', default=0.4, type=float, help="number of worker")
     return parser.parse_args()
-
-def get_newest_model(model_dir="./model/"):
-    model_list = glob(model_dir + "**.pth", recursive=True)
-    newest = '000000000000'
-    second_newest = '000000000000'
-    for model in model_list:
-        filename = os.path.basename(model)
-        time_created = filename[:-4]
-        isCorrectTime(time_created)
-        if int(time_created) >= int(newest):
-            second_newest = newest
-            newest = time_created
-    return second_newest, newest
-
 
 if __name__ == '__main__':
     config = parse_args()
