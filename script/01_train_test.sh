@@ -20,6 +20,7 @@ srun --container-image /purestorage/project/shhong/enroot_images/torch2.sqsh \
     --container-workdir /purestorage/project/shhong/Gomoku/ \
     bash -c "
     pip install lightning;
+    pip install wandb;
     python train.py --run_name $RUN_NAME --data_dir ./data/ --model_dir ./model/;
     " 
     
