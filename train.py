@@ -24,6 +24,8 @@ def parse_args():
     parser.add_argument('--total_epoch', default=200, type=int, help="total_epoch")
     parser.add_argument('--num_worker', default=8, type=int, help="number of worker")
     parser.add_argument('--dropout_rate', default=0.4, type=float, help="number of worker")
+
+    parser.add_argument('--model_update_count', default=10, type=int, help="how much time for updating model")
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -51,6 +53,8 @@ if __name__ == '__main__':
 
     print(f"pytorch total_params : {pytorch_total_params}")
 
+    model = fabric.setup(model)
+
     ''' Define Else '''
     # criterion = nn.CrossEntropyLoss()
     # criterion = nn.BCEWithLogitsLoss()
@@ -60,65 +64,70 @@ if __name__ == '__main__':
     if end != '000000000000':
         model.load_state_dict(torch.load(config.model_dir + end + '.pth'))
     
-    _, newest_time = get_newest_model(
-        model_dir=config.model_dir,
-    )
-
     first_lr = config.lr
     optimizer = optim.SGD(
         model.parameters(),
         lr=first_lr, momentum=0.9, weight_decay=5e-4, nesterov=False
     )
 
-    for epoch in range(config.total_epoch):
-        dataset = GomokuDataset(
-            save_dir=config.data_dir,
-            start = newest_time,
-            end = None,
-        )
-        
-        dataloader = DataLoader(
-            dataset,
-            batch_size=config.batch_size,
-            shuffle=True,
-            num_workers=config.num_worker,
-            pin_memory=True,
-            drop_last=True,
+    for count in range(config.model_update_count):
+        print(f"current model count {count}")
+
+        _, newest_time = get_newest_model(
+            model_dir=config.model_dir,
         )
 
-        cur_iter = 0
-        total_loss = 0
+        for epoch in range(config.total_epoch):
+            dataset = GomokuDataset(
+                save_dir=config.data_dir,
+                start = newest_time,
+                end = None,
+            )
+            
+            dataloader = DataLoader(
+                dataset,
+                batch_size=config.batch_size,
+                shuffle=True,
+                num_workers=config.num_worker,
+                pin_memory=True,
+                drop_last=True,
+            )
+
+            cur_iter = 0
+            total_loss = 0
+
+            dataloader = fabric.setup_dataloaders(dataloader)
+
+            for board, qvalue in dataloader:
+                optimizer.zero_grad()
+                outputs = model(board)
+
+                loss = criterion(outputs, qvalue)
+
+                total_loss += loss.item()
+                if cur_iter % 250 == 0:
+                    # wandb.log({
+                    #     'iter': cur_iter,
+                    #     'loss' : loss,
+                    # })
+                    print(f"iter : {cur_iter :08d} \t loss : {loss:08f}")
+
+                cur_iter += 1
+
+                loss.backward()
+                optimizer.step()
+
+            print(f"current epoch {epoch}")
+            print(f'total_loss: {round(total_loss, 4)} ({round(total_loss/cur_iter, 4)})')
+            # wandb.log({
+            #     'epoch': epoch,
+            #     'total_loss' : total_loss,
+            #     'avg_loss' : total_loss/cur_iter,
+            # })
         
-        for board, qvalue in dataloader:
-            optimizer.zero_grad()
-            outputs = model(board)
-
-            loss = criterion(outputs, qvalue)
-
-            total_loss += loss.item()
-            if cur_iter % 250 == 0:
-                # wandb.log({
-                #     'iter': cur_iter,
-                #     'loss' : loss,
-                # })
-                print(f"iter : {cur_iter :08d} \t loss : {loss:08f}")
-
-            cur_iter += 1
-
-            loss.backward()
-            optimizer.step()
-
-        print(f"current epoch {epoch}")
-        print(f'total_loss: {round(total_loss, 4)} ({round(total_loss/cur_iter, 4)})')
-        # wandb.log({
-        #     'epoch': epoch,
-        #     'total_loss' : total_loss,
-        #     'avg_loss' : total_loss/cur_iter,
-        # })
-    
-    curr_time = time.time()
-    save_format = '%y%m%d%H%M%S'
-    filename = time.strftime(save_format, curr_time) + ".pth"
-    filepath = os.path.join(config.model_dir, filename)
-    
-    torch.save(model.state_dict, filepath)
+        curr_time = time.time()
+        save_format = '%y%m%d%H%M%S'
+        filename = time.strftime(save_format, curr_time) + ".pth"
+        filepath = os.path.join(config.model_dir, filename)
+        
+        torch.save(model.state_dict, filepath)

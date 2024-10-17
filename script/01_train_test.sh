@@ -3,7 +3,7 @@
 ##SBATCH --nodelist=nv180
 
 #SBATCH --time=10:00:00
-#SBATCH -p 40g
+#SBATCH -p 80g
 #SBATCH --nodes=1            # This needs to match Trainer(num_nodes=...)
 #SBATCH --ntasks-per-node=1  # This needs to match Trainer(devices=...)
 #SBATCH --mem=32gb
@@ -22,5 +22,5 @@ srun --container-image /purestorage/project/shhong/enroot_images/torch2.sqsh \
     bash -c "
     pip install lightning;
     pip install wandb;
-    python train.py --run_name $RUN_NAME --batch_size 32 --lr 1e-3 --num_worker 8 --total_epoch 20;
-    " 
+    python train.py --run_name $RUN_NAME --batch_size 32 --lr 1e-3 --num_worker 8 --total_epoch 100 --model_update_count 1;
+    "
