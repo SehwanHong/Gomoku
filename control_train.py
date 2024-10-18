@@ -87,10 +87,11 @@ def submit_slurm_job(script_path):
 
 def run_continuously():
     model_dir = "./model_save/"
+    data_dir = "./data/"
     _, newest_time = get_newest_model(model_dir=model_dir)
 
     board_files = getFiles(
-        dir = model_dir, 
+        dir = data_dir, 
         start = newest_time,
         end = "991231235959",
     )
