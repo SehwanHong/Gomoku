@@ -1,10 +1,11 @@
 import subprocess
 import tempfile
 import os
+import time
 from utils import get_newest_model, getFiles
 
 def create_self_play(node_name, search_limit):
-    filename = create_slurm_script(node_name, search_limit)
+    filename = create_self_play_script(node_name, search_limit)
     job_id = submit_slurm_job(filename)
     if job_id is None:
         print('Error: sbatch job error')
@@ -13,7 +14,7 @@ def create_self_play(node_name, search_limit):
     os.unlink(filename)
 
 def check_resource_available():
-    cmd = "pestat -M 40000 -d | grep -e cubox -e hpe -e nv -e aten"
+    cmd = "pestat -M 40000 -d | grep -e hpe -e nv -e aten | grep -v aten228"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
     node_list = []
@@ -40,7 +41,7 @@ def fill_available_node(search_limit):
     for node_name in available_node_list:
         create_self_play(node_name, search_limit)
 
-def create_slurm_script(node_name: str, search_limit):
+def create_self_play_script(node_name: str, search_limit):
 
     script_content = f"""#!/bin/bash -l
 
@@ -85,6 +86,7 @@ def submit_slurm_job(script_path):
     job_id = result.stdout.strip().split()[-1]
     return job_id
 
+<<<<<<< Updated upstream
 def run_continuously():
     model_dir = "./model_save/"
     data_dir = "./data/"
@@ -97,8 +99,59 @@ def run_continuously():
     )
     print(f"{newest_time} {len(board_files)}")
         
+=======
+def run_train():
+    filename = "script/01_train_test.sh"
+    job_id = submit_slurm_job(filename) 
+    if job_id is None:
+        print('Error: sbatch job error')
+>>>>>>> Stashed changes
     
+    print(f'train [{job_id}] created')
+    os.unlink(filename)
+
+def run_continuous():
+    while True:
+        model_dir = "./model_save/"
+        _, newest_time = get_newest_model(model_dir=model_dir)
+
+        board_files = getFiles(
+            dir = model_dir, 
+            start = newest_time,
+            end = "991231235959",
+        )
+
+        search_limit = 1
+
+        if len(board_files) > 200:
+            while selfplay_not_running() != 0:
+                time.sleep(3)
+            run_train()
+            search_limit += 1
+        else:
+            while train_not_running() != 0:
+                time.sleep(3)
+            fill_available_node(search_limit=search_limit)
+
+def selfplay_not_running():
+    cmd = "squeue | grep shhong | grep tmp | wc -l"
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    running_jobs = int(result.stdout.strip())
+    return running_jobs
+
+
+def train_not_running():
+    cmd = "squeue | grep shhong | grep 01_tr | wc -l"
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    running_jobs = int(result.stdout.strip())
+    return running_jobs
+
 
 if __name__ == '__main__':
+<<<<<<< Updated upstream
     run_continuously()
     # fill_available_node(search_limit=1)
+=======
+    run_continuous()
+    # fill_available_node(search_limit=1)
+>>>>>>> Stashed changes
