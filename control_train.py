@@ -1,5 +1,6 @@
 import subprocess
 import tempfile
+import os
 
 def create_self_play(node_name, search_limit):
     filename = create_slurm_script(node_name, search_limit)
