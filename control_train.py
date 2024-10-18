@@ -14,7 +14,7 @@ def create_self_play(node_name, search_limit):
     os.unlink(filename)
 
 def check_resource_available():
-    cmd = "pestat -M 40000 -d | grep -e hpe -e nv -e aten | grep -v aten228 | grep -v shhong"
+    cmd = "pestat -M 40000 -d | grep -e hpe -e nv -e aten | grep -v aten228 | grep -v aten234 | grep -v shhong"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
     node_list = []
@@ -97,7 +97,6 @@ def run_train():
         print('Error: sbatch job error')
     
     print(f'train [{job_id}] created')
-    os.unlink(filename)
 
 def run_continuous():
     while True:
@@ -111,12 +110,11 @@ def run_continuous():
             end = "991231235959",
         )
 
-        search_limit = 1
+        search_limit = 5
+        print()
         print(f"current board file length is {len(board_files)} with {newest_time}")
-        if len(board_files) > 100:
-            while selfplay_not_running() != 0:
-                print(f"sleeping for jobs to close {selfplay_not_running()}")
-                time.sleep(5)
+        print(f"current serch limit is {search_limit}")
+        if len(board_files) > 50 and train_not_running() == 0:
             print(f"train started")
             run_train()
             search_limit += 1
@@ -130,6 +128,12 @@ def run_continuous():
 
 def selfplay_not_running():
     cmd = "squeue | grep shhong | grep tmp | wc -l"
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    running_jobs = int(result.stdout.strip())
+    return running_jobs
+
+def train_not_running():
+    cmd = "squeue | grep shhong | grep 01_train | wc -l"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     running_jobs = int(result.stdout.strip())
     return running_jobs
