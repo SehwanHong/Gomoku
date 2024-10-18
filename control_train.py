@@ -92,7 +92,7 @@ def run_continuously():
     board_files = getFiles(
         dir = model_dir, 
         start = newest_time,
-        end=None,
+        end = "991231235959",
     )
     print(f"{newest_time} {len(board_files)}")
         
