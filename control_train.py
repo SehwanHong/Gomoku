@@ -113,10 +113,10 @@ def run_continuous():
 
         search_limit = 1
         print(f"current board file length is {len(board_files)} with {newest_time}")
-        if len(board_files) > 200:
+        if len(board_files) > 100:
             while selfplay_not_running() != 0:
                 print(f"sleeping for jobs to close {selfplay_not_running()}")
-                time.sleep(60)
+                time.sleep(5)
             print(f"train started")
             run_train()
             search_limit += 1

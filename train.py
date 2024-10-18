@@ -77,6 +77,8 @@ if __name__ == '__main__':
             model_dir=config.model_dir,
         )
 
+        curr_time = time.localtime()
+
         for epoch in range(config.total_epoch):
             dataset = GomokuDataset(
                 save_dir=config.data_dir,
@@ -125,7 +127,6 @@ if __name__ == '__main__':
             #     'avg_loss' : total_loss/cur_iter,
             # })
         
-        curr_time = time.localtime()
         save_format = '%y%m%d%H%M%S'
         filename = time.strftime(save_format, curr_time) + ".pth"
         filepath = os.path.join(config.model_dir, filename)

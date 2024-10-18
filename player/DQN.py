@@ -48,7 +48,6 @@ class DQNPlayer(Player):
         self.list_action = []
         self.pred_Q_value = []
         self.root = DQNNode(gameState, None)
-        self.gamePlayStartTime = time.localtime()
 
     def loadDQN(self, weightfile):
         self.DQNnet = DQN()
@@ -145,6 +144,7 @@ class DQNPlayer(Player):
 
     def saveGamePlay(self):
         if self.store:
+            self.gamePlayStartTime = time.localtime()
             filename = time.strftime(DQNPlayer.save_format, self.gamePlayStartTime) + ".npz"
             filepath = os.path.join(self.save_dir, filename)
             np.savez(filepath, board=self.prevStates, value=self.pred_Q_value)
