@@ -24,12 +24,7 @@ class DQNPlayer(Player):
             device = 'mps',
             save_dir = "./data/"
         ):
-        if weightfile == None:
-            self.DQNnet = DQN()
-        else:
-            # Load weight
-            self.loadDQN(weightfile)
-        
+
         self.searchLimit = searchLimit
         self.timeSearch = timeSearch
 
@@ -39,7 +34,13 @@ class DQNPlayer(Player):
         self.store = store
         self.save_dir = save_dir
         self.device = device
-
+        
+        if weightfile == None:
+            self.DQNnet = DQN()
+        else:
+            # Load weight
+            self.loadDQN(weightfile)
+        
         self.DQNnet.to(device=self.device)
 
     def reset(self, gameState):
@@ -51,7 +52,7 @@ class DQNPlayer(Player):
 
     def loadDQN(self, weightfile):
         self.DQNnet = DQN()
-        self.DQNnet.load_state_dict(torch.load(weightfile))
+        self.DQNnet.load_state_dict(torch.load(weightfile, map_location=torch.decive(self.device)))
     
     def search(self, state, train=True, print_state=True):
         t = time.time()
