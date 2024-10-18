@@ -86,26 +86,11 @@ def submit_slurm_job(script_path):
     job_id = result.stdout.strip().split()[-1]
     return job_id
 
-<<<<<<< Updated upstream
-def run_continuously():
-    model_dir = "./model_save/"
-    data_dir = "./data/"
-    _, newest_time = get_newest_model(model_dir=model_dir)
-
-    board_files = getFiles(
-        dir = data_dir, 
-        start = newest_time,
-        end = "991231235959",
-    )
-    print(f"{newest_time} {len(board_files)}")
-        
-=======
 def run_train():
     filename = "script/01_train_test.sh"
     job_id = submit_slurm_job(filename) 
     if job_id is None:
         print('Error: sbatch job error')
->>>>>>> Stashed changes
     
     print(f'train [{job_id}] created')
     os.unlink(filename)
@@ -148,10 +133,5 @@ def train_not_running():
 
 
 if __name__ == '__main__':
-<<<<<<< Updated upstream
-    run_continuously()
-    # fill_available_node(search_limit=1)
-=======
     run_continuous()
     # fill_available_node(search_limit=1)
->>>>>>> Stashed changes
