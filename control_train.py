@@ -1,8 +1,7 @@
 import subprocess
 import tempfile
 import os
-from utils import get_newest_model
-from board_dataset import GomokuDataset
+from utils import get_newest_model, getFiles
 
 def create_self_play(node_name, search_limit):
     filename = create_slurm_script(node_name, search_limit)
@@ -90,7 +89,7 @@ def run_continuously():
     model_dir = "./model_save/"
     start, end = get_newest_model(model_dir=model_dir)
 
-    board_files = GomokuDataset.getFiles(model_dir, start, end)
+    board_files = getFiles(model_dir, start, end)
     print(f"{start} {end} {len(board_files)}")
         
     
