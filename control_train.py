@@ -84,4 +84,4 @@ def submit_slurm_job(script_path):
 
 
 if __name__ == '__main__':
-    fill_available_node()    
+    fill_available_node(search_limit=1)
