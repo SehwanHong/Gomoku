@@ -1,6 +1,8 @@
 import subprocess
 import tempfile
 import os
+from utils import get_newest_model
+from board_dataset import GomokuDataset
 
 def create_self_play(node_name, search_limit):
     filename = create_slurm_script(node_name, search_limit)
@@ -84,6 +86,15 @@ def submit_slurm_job(script_path):
     job_id = result.stdout.strip().split()[-1]
     return job_id
 
+def run_continuously():
+    model_dir = "./model_save/"
+    start, end = get_newest_model(model_dir=model_dir)
+
+    board_files = GomokuDataset.getFiles(model_dir, start, end)
+    print(f"{start} {end} {len(board_files)}")
+        
+    
 
 if __name__ == '__main__':
-    fill_available_node(search_limit=1)
+    run_continuously()
+    # fill_available_node(search_limit=1)
