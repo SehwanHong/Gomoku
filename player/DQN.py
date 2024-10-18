@@ -52,7 +52,7 @@ class DQNPlayer(Player):
 
     def loadDQN(self, weightfile):
         self.DQNnet = DQN()
-        self.DQNnet.load_state_dict(torch.load(weightfile, map_location=torch.decive(self.device)))
+        self.DQNnet.load_state_dict(torch.load(weightfile, map_location=torch.device(self.device)))
     
     def search(self, state, train=True, print_state=True):
         t = time.time()
