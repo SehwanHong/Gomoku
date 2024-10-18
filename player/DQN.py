@@ -144,7 +144,7 @@ class DQNPlayer(Player):
 
     def saveGamePlay(self):
         if self.store:
-            self.gamePlayStartTime = time.localtime()
+            self.gamePlayStartTime = time.gmtime()
             filename = time.strftime(DQNPlayer.save_format, self.gamePlayStartTime) + ".npz"
             filepath = os.path.join(self.save_dir, filename)
             np.savez(filepath, board=self.prevStates, value=self.pred_Q_value)

@@ -77,7 +77,7 @@ if __name__ == '__main__':
             model_dir=config.model_dir,
         )
 
-        curr_time = time.localtime()
+        curr_time = time.gmtime()
 
         for epoch in range(config.total_epoch):
             dataset = GomokuDataset(
