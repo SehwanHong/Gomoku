@@ -30,6 +30,7 @@ def check_resource_available():
                 break
             
             node_list.append(node_name)
+    return node_list
 
 def fill_available_node(search_limit):
     available_node_list = check_resource_available()
