@@ -19,7 +19,11 @@ def check_resource_available():
     
     node_list = []
 
-    result = result.stdout.strip().split('\n')
+    result = result.stdout.strip()
+    if result == '':
+        return []
+    result = result.split('\n')
+    
     for stat_info in result:
         info_list = stat_info.split()
         node_name = info_list[0]
@@ -98,29 +102,31 @@ def run_train():
 def run_continuous():
     while True:
         model_dir = "./model_save/"
+        data_dir = "./data/"
         _, newest_time = get_newest_model(model_dir=model_dir)
 
         board_files = getFiles(
-            dir = model_dir, 
+            dir = data_dir, 
             start = newest_time,
             end = "991231235959",
         )
 
         search_limit = 1
-
+        print(f"current board file length is {len(board_files)} with {newest_time}")
         if len(board_files) > 200:
             while selfplay_not_running() != 0:
-                time.sleep(3)
+                print(f"sleeping for jobs to close {selfplay_not_running()}")
+                time.sleep(60)
             print(f"train started")
             run_train()
             search_limit += 1
         else:
-            if selfplay_not_running() < 50:
+            if selfplay_not_running() < 70:
                 fill_available_node(search_limit=search_limit)
         
         print()
-        print("start Sleeping for 60 seconds")
-        time.sleep(60)
+        print("start Sleeping for 10 seconds")
+        time.sleep(10)
 
 def selfplay_not_running():
     cmd = "squeue | grep shhong | grep tmp | wc -l"
