@@ -99,6 +99,7 @@ def run_train():
     print(f'train [{job_id}] created')
 
 def run_continuous():
+    search_limit = 5
     while True:
         model_dir = "./model_save/"
         data_dir = "./data/"
@@ -110,7 +111,6 @@ def run_continuous():
             end = "991231235959",
         )
 
-        search_limit = 5
         print()
         print(f"current board file length is {len(board_files)} with {newest_time}")
         print(f"current serch limit is {search_limit}")
@@ -123,8 +123,8 @@ def run_continuous():
                 fill_available_node(search_limit=search_limit)
         
         print()
-        print("start Sleeping for 10 seconds")
-        time.sleep(10)
+        print("start Sleeping for 30 seconds")
+        time.sleep(30)
 
 def selfplay_not_running():
     cmd = "squeue | grep shhong | grep tmp | wc -l"
