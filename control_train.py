@@ -14,7 +14,7 @@ def create_self_play(node_name, search_limit):
     os.unlink(filename)
 
 def check_resource_available():
-    cmd = "pestat -M 40000 -d | grep -e hpe -e nv -e aten | grep -v aten228"
+    cmd = "pestat -M 40000 -d | grep -e hpe -e nv -e aten | grep -v aten228 | grep -v shhong"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
     node_list = []
@@ -30,9 +30,9 @@ def check_resource_available():
         
         for i in range(cpu_available // 5):
             if i > 3:
-                break
-            
+                break            
             node_list.append(node_name)
+
     return node_list
 
 def fill_available_node(search_limit):
@@ -111,26 +111,22 @@ def run_continuous():
         if len(board_files) > 200:
             while selfplay_not_running() != 0:
                 time.sleep(3)
+            print(f"train started")
             run_train()
             search_limit += 1
         else:
-            while train_not_running() != 0:
-                time.sleep(3)
-            fill_available_node(search_limit=search_limit)
+            if selfplay_not_running() < 50:
+                fill_available_node(search_limit=search_limit)
+        
+        print()
+        print("start Sleeping for 60 seconds")
+        time.sleep(60)
 
 def selfplay_not_running():
     cmd = "squeue | grep shhong | grep tmp | wc -l"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     running_jobs = int(result.stdout.strip())
     return running_jobs
-
-
-def train_not_running():
-    cmd = "squeue | grep shhong | grep 01_tr | wc -l"
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    running_jobs = int(result.stdout.strip())
-    return running_jobs
-
 
 if __name__ == '__main__':
     run_continuous()
