@@ -36,7 +36,7 @@ class GomokuDataset(Dataset):
 
     def __getitem__(self, index):
         gameState, value = self.board_lists[index]
-        value = np.reshape(value, (7,7))
+        value = np.reshape(value, (15,15))
 
         random_value = random()
         if random_value < 0.25:
