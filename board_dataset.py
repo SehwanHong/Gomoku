@@ -54,6 +54,8 @@ class GomokuDataset(Dataset):
         else:
             pass
 
+        value = value.flatten()
+
         gameState = torch.from_numpy(gameState.astype(np.float32))
         value = torch.from_numpy(value.astype(np.float32))
         return gameState, value
