@@ -5,6 +5,7 @@ from glob import glob
 import numpy as np
 from utils import isCorrectTime, getFiles, getGameStates
 import torch
+from random import random
 
 class GomokuDataset(Dataset):
     def __init__(
@@ -35,8 +36,27 @@ class GomokuDataset(Dataset):
 
     def __getitem__(self, index):
         gameState, value = self.board_lists[index]
-        
-        return torch.from_numpy(gameState.astype(np.float32)), torch.from_numpy(value.astype(np.float32))
+        value = np.reshape(value, (7,7))
+
+        random_value = random()
+        if random_value < 0.25:
+            # Horizontal flip
+            gameState = gameState[::-1, :]
+            value = value[::-1, :]
+        elif random_value < 0.5:
+            # Vertical flip
+            gameState = gameState[:, ::-1]
+            value = value[:, ::-1]
+        elif random_value < 0.75:
+            # Horizontal and Vertical Flip
+            gameState = gameState[::-1, ::-1]
+            value = value[::-1, ::-1]
+        else:
+            pass
+
+        gameState = torch.from_numpy(gameState.astype(np.float32))
+        value = torch.from_numpy(value.astype(np.float32))
+        return gameState, value
 
 
 if __name__ == "__main__":
