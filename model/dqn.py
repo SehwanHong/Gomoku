@@ -124,13 +124,15 @@ class DQN(nn.Module):
         super().__init__()
         self.conv1 = nn.Conv2d(7, 16, kernel_size=3, stride=1,  padding=1)
         self.bb1 = BasicBlock(16, 32)
-        # self.bb2 = BasicBlock(32, 64)
-        self.value = Value(32, board_size)
+        self.bb2 = BasicBlock(32, 64)
+        self.bb3 = BasicBlock(64, 64)
+        self.value = Value(64, board_size)
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.bb1(x)
-        # x = self.bb2(x)
+        x = self.bb2(x)
+        x = self.bb3(x)
         x = self.value(x)
         return x
 

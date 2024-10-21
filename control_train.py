@@ -66,7 +66,7 @@ srun --container-image /purestorage/project/shhong/enroot_images/torch2.sqsh \
     --container-workdir /purestorage/project/shhong/Gomoku/ \
     bash -c "
     pip install lightning;
-    python server_main.py --data_dir ./data/ --model_dir ./model_save/ --store_game_play --search_limit {search_limit} --time_search --iter 1 --self_play --train --update_model;
+    python server_main.py --data_dir ./data/ --model_dir ./model_save/ --store_game_play --search_limit {search_limit} --iter 1 --self_play --train --update_model;
     "
 
 """
@@ -99,7 +99,7 @@ def run_train():
     print(f'train [{job_id}] created')
 
 def run_continuous():
-    search_limit = 5
+    search_limit = 50
     while True:
         model_dir = "./model_save/"
         data_dir = "./data/"
@@ -117,7 +117,7 @@ def run_continuous():
         if len(board_files) > 50 and train_not_running() == 0:
             print(f"train started")
             run_train()
-            search_limit += 1
+            search_limit += 50
         else:
             if selfplay_not_running() < 70:
                 fill_available_node(search_limit=search_limit)
