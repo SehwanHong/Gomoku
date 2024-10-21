@@ -1,4 +1,4 @@
-from display import MNKDisplay
+from display import MNKDisplay, RenjuDisplay
 from tkinter import *
 from board import mnkState
 from board import Renju
@@ -8,6 +8,12 @@ from self_play import SelfPlay
 def playGraphicMNK():
     root = Tk()
     display = MNKDisplay(root, Renju, 15, 15, 5)
+    display.mainloop()
+    root.mainloop()
+
+def playGraphicRenju():
+    root = Tk()
+    display = RenjuDisplay(root)
     display.mainloop()
     root.mainloop()
 
@@ -27,10 +33,11 @@ def DQN_selfplay(boardState = Renju, player=None):
 
 if __name__ == "__main__":
     # playGraphicMNK()
-    player = DQNPlayer(
-        searchLimit=90,
-        store=True,
-        timeSearch=True,
-        device='cpu'
-    )
-    DQN_selfplay(player=player)
+    playGraphicRenju()
+    # player = DQNPlayer(
+    #     searchLimit=90,
+    #     store=True,
+    #     timeSearch=True,
+    #     device='cpu'
+    # )
+    # DQN_selfplay(player=player)
