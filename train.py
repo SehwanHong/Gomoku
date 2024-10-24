@@ -1,4 +1,4 @@
-from board_dataset import GomokuDataset
+from board_dataset import GomokuDataset, GomokuDatasetEpisode
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -26,22 +26,14 @@ def parse_args():
     parser.add_argument('--dropout_rate', default=0.4, type=float, help="number of worker")
 
     parser.add_argument('--model_update_count', default=10, type=int, help="how much time for updating model")
+    parser.add_argument('--hard_update', action='store_true', help="train model with hard update")
+    parser.add_argument('--soft_update', action='store_true', help="train model with soft update")
+    parser.add_argument('--tau', default=5e-3, type=float, help="option for soft update")
+    parser.add_argument('--episodes', default=100, type=int, help="option for soft update")
+    parser.add_argument('--gamma', default=0.99, type=float, help="option for soft update")
     return parser.parse_args()
 
-if __name__ == '__main__':
-    config = parse_args()
-
-    # wandb.login(key='local-73177de041f41c769eb8cbdccb982a9a5406fab7', host='http://wandb.artfacestudio.com')
-    # wandb.init(
-    #     project="gomoku",
-    #     name=config.run_name,
-    #     config=config,
-    # )
-
-    fabric = Fabric(accelerator='cuda', devices=1, strategy="ddp",)
-    fabric.launch()
-    fabric.seed_everything(990104)
-    
+def train_hard(config, model):    
     start, end = get_newest_model(
         model_dir=config.model_dir,
     )
@@ -70,66 +62,187 @@ if __name__ == '__main__':
         lr=first_lr, momentum=0.9, weight_decay=5e-4, nesterov=False
     )
 
+    _, newest_time = get_newest_model(
+        model_dir=config.model_dir,
+    )
+
+    curr_time = time.gmtime()
+
+    for epoch in range(config.total_epoch):
+        dataset = GomokuDataset(
+            save_dir=config.data_dir,
+            start = newest_time,
+            end = None,
+        )
+        
+        dataloader = DataLoader(
+            dataset,
+            batch_size=config.batch_size,
+            shuffle=True,
+            num_workers=config.num_worker,
+            pin_memory=True,
+            drop_last=True,
+        )
+
+        cur_iter = 0
+        total_loss = 0
+
+        dataloader = fabric.setup_dataloaders(dataloader)
+
+        for batch in dataloader:
+            board = batch['state']
+            qvalue = batch['reward']
+            optimizer.zero_grad()
+            outputs = model(board)
+
+            loss = criterion(outputs, qvalue)
+
+            total_loss += loss.item()
+            if cur_iter % 250 == 0:
+                # wandb.log({
+                #     'iter': cur_iter,
+                #     'loss' : loss,
+                # })
+                print(f"iter : {cur_iter :08d} \t loss : {loss:08f}")
+
+            cur_iter += 1
+
+            loss.backward()
+            optimizer.step()
+
+        print(f"current epoch {epoch}")
+        print(f'total_loss: {round(total_loss, 4)} ({round(total_loss/cur_iter, 4)})')
+        # wandb.log({
+        #     'epoch': epoch,
+        #     'total_loss' : total_loss,
+        #     'avg_loss' : total_loss/cur_iter,
+        # })
+    
+    save_format = '%y%m%d%H%M%S'
+    filename = time.strftime(save_format, curr_time) + ".pth"
+    filepath = os.path.join(config.model_dir, filename)
+    
+    print(f"saved to {filepath}")
+    torch.save(model.state_dict(), filepath)
+
+def train_soft(config, model):
+    start, end = get_newest_model(
+        model_dir=config.model_dir,
+    )
+
+    policy_net = DQN()
+    target_net = DQN()
+
+
+    pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    # wandb.config.update({"num_param": pytorch_total_params})
+
+    print(f"pytorch total_params : {pytorch_total_params}")
+
+    policy_net = fabric.setup(policy_net)
+    target_net = fabric.setup(target_net)
+
+    ''' Define Else '''
+    # criterion = nn.CrossEntropyLoss()
+    # criterion = nn.BCEWithLogitsLoss()
+    # criterion = LabelSmoothSoftmaxCEV1(lb_smooth=0.1).cuda()
+    criterion = nn.MSELoss()
+
+    if end != '000000000000':
+        policy_net.load_state_dict(torch.load(config.model_dir + end + '.pth'))
+        target_net.load_state_dict(torch.load(config.model_dir + end + '.pth'))
+    else:
+        target_net.load_state_dict(policy_net.state_dict())
+    
+    first_lr = config.lr
+    optimizer = optim.SGD(
+        policy_net.parameters(),
+        lr=first_lr, momentum=0.9, weight_decay=5e-4, nesterov=False
+    )
+
+    _, newest_time = get_newest_model(
+        model_dir=config.model_dir,
+    )
+
+    curr_time = time.gmtime()
+
+    for epoch in range(config.total_epoch):
+        dataset = GomokuDatasetEpisode(
+            save_dir=config.data_dir,
+            episodes=config.episodes,
+        )
+        
+        dataloader = DataLoader(
+            dataset,
+            batch_size=config.batch_size,
+            shuffle=True,
+            num_workers=config.num_worker,
+            pin_memory=True,
+            drop_last=True,
+        )
+
+        cur_iter = 0
+        total_loss = 0
+
+        dataloader = fabric.setup_dataloaders(dataloader)
+
+        for batch in dataloader:
+            state = batch['state']
+            reward = batch['reward']
+            next_state = batch['next_state']
+            non_final_mask = batch['mask']
+
+            outputs = policy_net(state)
+
+
+            non_final_next_states = torch.cat([s for s in next_state if s is not None])
+
+            next_state_values = fabric.to_device(torch.zeros(config.batch_size))
+            with torch.no_grad():
+                next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values
+
+            expected_reward = reward + config.gamma * next_state_values
+
+            loss = criterion(outputs, expected_reward)
+
+            total_loss += loss.item()
+            if cur_iter % 50 == 0:
+                print(f"iter : {cur_iter :08d} \t loss : {loss:08f}")
+
+            cur_iter += 1
+
+            optimizer.zero_grad()
+            loss.backward()
+
+            torch.nn.utils.clip_grad_value_(policy_net.parameters(), 100)
+            optimizer.step()
+
+        print(f"current epoch {epoch}")
+        print(f'total_loss: {round(total_loss, 4)} ({round(total_loss/cur_iter, 4)})')
+    
+    save_format = '%y%m%d%H%M%S'
+    filename = time.strftime(save_format, curr_time) + ".pth"
+    filepath = os.path.join(config.model_dir, filename)
+    
+    print(f"saved to {filepath}")
+    target_net_state_dict = target_net.state_dict()
+    policy_net_state_dict = policy_net.state_dict()
+    for key in policy_net_state_dict:
+        target_net_state_dict[key] = policy_net_state_dict[key]*config.tau + target_net_state_dict[key]*(1-config.tau)
+    target_net.load_state_dict(target_net_state_dict)
+    torch.save(target_net.state_dict(), filepath)
+
+if __name__ == '__main__':
+    config = parse_args()
+
+    fabric = Fabric(accelerator='cuda', devices=1, strategy="ddp",)
+    fabric.launch()
+    fabric.seed_everything(990104)
+
     for count in range(config.model_update_count):
         print(f"current model count {count}")
 
-        _, newest_time = get_newest_model(
-            model_dir=config.model_dir,
-        )
-
-        curr_time = time.gmtime()
-
-        for epoch in range(config.total_epoch):
-            dataset = GomokuDataset(
-                save_dir=config.data_dir,
-                start = newest_time,
-                end = None,
-            )
-            
-            dataloader = DataLoader(
-                dataset,
-                batch_size=config.batch_size,
-                shuffle=True,
-                num_workers=config.num_worker,
-                pin_memory=True,
-                drop_last=True,
-            )
-
-            cur_iter = 0
-            total_loss = 0
-
-            dataloader = fabric.setup_dataloaders(dataloader)
-
-            for board, qvalue in dataloader:
-                optimizer.zero_grad()
-                outputs = model(board)
-
-                loss = criterion(outputs, qvalue)
-
-                total_loss += loss.item()
-                if cur_iter % 250 == 0:
-                    # wandb.log({
-                    #     'iter': cur_iter,
-                    #     'loss' : loss,
-                    # })
-                    print(f"iter : {cur_iter :08d} \t loss : {loss:08f}")
-
-                cur_iter += 1
-
-                loss.backward()
-                optimizer.step()
-
-            print(f"current epoch {epoch}")
-            print(f'total_loss: {round(total_loss, 4)} ({round(total_loss/cur_iter, 4)})')
-            # wandb.log({
-            #     'epoch': epoch,
-            #     'total_loss' : total_loss,
-            #     'avg_loss' : total_loss/cur_iter,
-            # })
-        
-        save_format = '%y%m%d%H%M%S'
-        filename = time.strftime(save_format, curr_time) + ".pth"
-        filepath = os.path.join(config.model_dir, filename)
-        
-        print(f"saved to {filepath}")
-        torch.save(model.state_dict(), filepath)
+        if config.hard_update:
+            train_hard(config)
+        elif config.soft_update:
+            train_soft(config)

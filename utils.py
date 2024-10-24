@@ -33,11 +33,14 @@ def get_newest_model(model_dir="./model/"):
 def getGameStates(board_files):
     board_lists = []
     for file_name in board_files:
+
         numpy_file = np.load(file_name, allow_pickle=True)
         boards = numpy_file['board']
         values = numpy_file['value']
         row = boards[0].row
         col = boards[0].col
+        game_length = len(value)
+        single_episode_list = []
         for idx, value in enumerate(values):
             if idx < 3:
                 gameBoard = []
@@ -48,17 +51,30 @@ def getGameStates(board_files):
                         idx = 0
             else:
                 gameBoard = boards[idx:idx-3:-1]
+
             assert len(gameBoard) == 3, f"{idx} {len(gameBoard)}"
+
             gameState = np.zeros((7, row, col))
             for idx, gs in enumerate(gameBoard):
                 gameState[idx, :, :] = gs.board > 0
                 gameState[idx+3, : , :] = gs.board < 0
             gameState[-1, :, :] = boards[idx].currentStone
-            board_lists.append((gameState, value))
 
-    size = board_lists[0][0].shape
-    for gameBoard, value in board_lists:
-        assert size == gameBoard.shape
+            single_episode_list.append((gameState, value))
+        
+
+        for idx, batch in enumerate(single_episode_list):
+            gameState, value = batch
+            board_lists.append({
+                "state" : gameState,
+                "reward" : value,
+                "next_state" : single_episode_list[idx + 1] if idx < game_length else None,
+                "mask" : True if idx < game_length else False,
+            })
+
+    size = board_lists[0]['state'].shape
+    for batch in board_lists:
+        assert size == batch['state'].shape
     
     return board_lists
 

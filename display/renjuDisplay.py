@@ -6,7 +6,14 @@ from .display import MNKDisplay
 from board import Renju
 
 class RenjuDisplay(tk.Frame):
-    def __init__(self, master, width=720, height=720):
+    def __init__(
+            self,
+            master,
+            width=720,
+            height=720,
+            searchLimit=900,
+            weightfile='',
+        ):
         super(RenjuDisplay, self).__init__(master)
         self.game = Renju
         self.gameState = self.game()
@@ -22,7 +29,7 @@ class RenjuDisplay(tk.Frame):
         self.canv.bind("<n>", self.action)
         self.winner = self.gameState.winner
         self.drawBoard()
-        self.player = DQNPlayer(searchLimit=900, weightfile="./241021012616.pth")
+        self.player = DQNPlayer(searchLimit=searchLimit, weightfile=weightfile)
         self.player.reset(gameState=self.gameState)
 
         self.ClickTrue = True
@@ -123,7 +130,7 @@ class RenjuDisplay(tk.Frame):
     def action(self, event):
         print("event activated")
         if not self.ClickTrue:
-            action = self.player.search(self.gameState, print_state=True)
+            action = self.player.search(self.gameState,  train=False, print_state=True)
             print(action)
             self.gameState = self.gameState.takeAction(action)
             self.winner = self.gameState.winner

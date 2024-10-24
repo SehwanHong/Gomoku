@@ -13,7 +13,11 @@ def playGraphicMNK():
 
 def playGraphicRenju():
     root = Tk()
-    display = RenjuDisplay(root)
+    display = RenjuDisplay(
+        root,
+        searchLimit=900,
+        weightfile='241023033714.pth',
+    )
     display.mainloop()
     root.mainloop()
 
