@@ -65,10 +65,13 @@ def getGameStates(board_files):
 
         for idx, batch in enumerate(single_episode_list):
             gameState, value = batch
+            nextState = None
+            if idx < game_length:
+                nextState = single_episode_list[idx + 1] 
             board_lists.append({
                 "state" : gameState,
                 "reward" : value,
-                "next_state" : single_episode_list[idx + 1] if idx < game_length else None,
+                "next_state" : nextState,
                 "mask" : True if idx < game_length else False,
             })
 
