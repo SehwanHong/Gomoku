@@ -190,7 +190,7 @@ def train_soft(config):
         for batch in dataloader:
             state = batch['state']
             reward = batch['reward']
-            action = batch['action']
+            action = batch['action'].unsqueeze(0)
             next_state = batch['next_state']
             non_final_mask = batch['mask']
 
