@@ -33,7 +33,7 @@ def parse_args():
     parser.add_argument('--gamma', default=0.99, type=float, help="option for soft update")
     return parser.parse_args()
 
-def train_hard(config, model):    
+def train_hard(config):    
     start, end = get_newest_model(
         model_dir=config.model_dir,
     )
@@ -125,7 +125,7 @@ def train_hard(config, model):
     print(f"saved to {filepath}")
     torch.save(model.state_dict(), filepath)
 
-def train_soft(config, model):
+def train_soft(config):
     start, end = get_newest_model(
         model_dir=config.model_dir,
     )
@@ -134,7 +134,7 @@ def train_soft(config, model):
     target_net = DQN()
 
 
-    pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    pytorch_total_params = sum(p.numel() for p in policy_net.parameters() if p.requires_grad)
     # wandb.config.update({"num_param": pytorch_total_params})
 
     print(f"pytorch total_params : {pytorch_total_params}")
