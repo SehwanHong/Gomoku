@@ -97,17 +97,20 @@ class GomokuDatasetEpisode(Dataset):
         if random_value < 0.25:
             # Horizontal flip
             gameState = gameState[::-1, :]
-            nextState = nextState[::-1, :]
+            if nextState is not None:
+                nextState = nextState[::-1, :]
             value = value[::-1, :]
         elif random_value < 0.5:
             # Vertical flip
             gameState = gameState[:, ::-1]
-            nextState = nextState[:, ::-1]
+            if nextState is not None:
+                nextState = nextState[:, ::-1]
             value = value[:, ::-1]
         elif random_value < 0.75:
             # Horizontal and Vertical Flip
             gameState = gameState[::-1, ::-1]
-            nextState = nextState[::-1, ::-1]
+            if nextState is not None:
+                nextState = nextState[::-1, ::-1]
             value = value[::-1, ::-1]
         else:
             pass
@@ -115,7 +118,10 @@ class GomokuDatasetEpisode(Dataset):
         value = value.flatten()
 
         gameState = torch.from_numpy(gameState.astype(np.float32))
-        nextState = torch.from_numpy(nextState.astype(np.float32))
+        if nextState is not None:
+            nextState = torch.from_numpy(nextState.astype(np.float32))
+        else:
+            nextState = torch.zeros_like(gameState)
         value = torch.from_numpy(value.astype(np.float32))
         return {
             "state" : gameState,
