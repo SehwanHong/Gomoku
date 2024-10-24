@@ -201,7 +201,7 @@ def train_soft(config):
             with torch.no_grad():
                 next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values
 
-            expected_reward = reward + config.gamma * next_state_values
+            expected_reward = reward + (config.gamma * next_state_values).unsqueeze(0)
 
             loss = criterion(outputs, expected_reward)
 
