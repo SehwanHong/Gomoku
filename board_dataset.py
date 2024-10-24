@@ -117,7 +117,6 @@ class GomokuDatasetEpisode(Dataset):
         gameState = torch.from_numpy(gameState.astype(np.float32))
         nextState = torch.from_numpy(nextState.astype(np.float32))
         value = torch.from_numpy(value.astype(np.float32))
-        mask = torch.from_numpy(mask)
         return {
             "state" : gameState,
             "reward" : value,
