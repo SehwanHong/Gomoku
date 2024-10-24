@@ -195,7 +195,7 @@ def train_soft(config):
             outputs = policy_net(state)
 
 
-            non_final_next_states = torch.cat([s for s in next_state if s is not None])
+            non_final_next_states = next_state[non_final_mask]
 
             next_state_values = fabric.to_device(torch.zeros(config.batch_size))
             with torch.no_grad():
