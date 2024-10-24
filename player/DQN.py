@@ -116,7 +116,7 @@ class DQNPlayer(Player):
         temp_state = node.state.deepcopy()
         actions = temp_state.getPossibleActions()
         if len(actions) == 0:
-            return node, node.state.winner * 1e2
+            return node, 1e2
         else:
             gameState = self.generateGameState(node) #Generate Game State
             gameState = torch.from_numpy(gameState).to(device=self.device)
@@ -147,7 +147,7 @@ class DQNPlayer(Player):
             self.gamePlayStartTime = time.gmtime()
             filename = time.strftime(DQNPlayer.save_format, self.gamePlayStartTime) + ".npz"
             filepath = os.path.join(self.save_dir, filename)
-            np.savez(filepath, board=self.prevStates, value=self.pred_Q_value)
+            np.savez(filepath, board=self.prevStates, value=self.pred_Q_value, action=self.list_action)
 
     def generateGameState(self, node):
         gameStates = []

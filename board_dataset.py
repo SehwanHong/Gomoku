@@ -90,6 +90,7 @@ class GomokuDatasetEpisode(Dataset):
         gameState = batch_dict['state']
         value = batch_dict['reward']
         nextState = batch_dict['next_state']
+        action = batch_dict['action']
         mask = batch_dict['mask']
         value = np.reshape(value, (15,15))
 
@@ -126,6 +127,7 @@ class GomokuDatasetEpisode(Dataset):
         return {
             "state" : gameState,
             "reward" : value,
+            "action" : action,
             "next_state" : nextState,
             "mask" : mask,
         }

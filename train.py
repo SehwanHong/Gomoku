@@ -146,7 +146,8 @@ def train_soft(config):
     # criterion = nn.CrossEntropyLoss()
     # criterion = nn.BCEWithLogitsLoss()
     # criterion = LabelSmoothSoftmaxCEV1(lb_smooth=0.1).cuda()
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
+    criterion = nn.SmoothL1Loss()
 
     if end != '000000000000':
         policy_net.load_state_dict(torch.load(config.model_dir + end + '.pth'))
@@ -189,10 +190,11 @@ def train_soft(config):
         for batch in dataloader:
             state = batch['state']
             reward = batch['reward']
+            action = batch['action']
             next_state = batch['next_state']
             non_final_mask = batch['mask']
 
-            outputs = policy_net(state)
+            outputs = policy_net(state).gather(1, action)
 
 
             non_final_next_states = next_state[non_final_mask]
@@ -201,7 +203,7 @@ def train_soft(config):
             with torch.no_grad():
                 next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values
 
-            expected_reward = reward + (config.gamma * next_state_values).unsqueeze(0)
+            expected_reward = reward.gather(action) + config.gamma * next_state_values
 
             loss = criterion(outputs, expected_reward)
 

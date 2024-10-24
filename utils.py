@@ -37,6 +37,7 @@ def getGameStates(board_files):
         numpy_file = np.load(file_name, allow_pickle=True)
         boards = numpy_file['board']
         values = numpy_file['value']
+        actions = numpy_file['action']
         row = boards[0].row
         col = boards[0].col
         game_length = len(values)
@@ -60,11 +61,11 @@ def getGameStates(board_files):
                 gameState[idx+3, : , :] = gs.board < 0
             gameState[-1, :, :] = boards[idx].currentStone
 
-            single_episode_list.append((gameState, value))
+            single_episode_list.append((gameState, value, actions[idx]))
         
 
         for idx, batch in enumerate(single_episode_list):
-            gameState, value = batch
+            gameState, value, action = batch
             nextState = None
             if idx < game_length - 1:
                 nextState, _ = single_episode_list[idx + 1] 
@@ -72,6 +73,7 @@ def getGameStates(board_files):
                 "state" : gameState,
                 "reward" : value,
                 "next_state" : nextState,
+                "action" : 7*action.x + action.y ,
                 "mask" : True if idx < game_length else False,
             })
 
