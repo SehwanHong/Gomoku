@@ -14,7 +14,8 @@ def create_self_play(node_name, search_limit):
     os.unlink(filename)
 
 def check_resource_available():
-    cmd = "pestat -M 40000 -d | grep -e hpe -e nv -e aten | grep -v aten228 | grep -v aten234 | grep -v shhong"
+    cmd = "pestat -M 40000 -d | grep -e hpe -e nv | grep -v shhong"
+    # cmd = "pestat -M 40000 -d | grep -e hpe -e nv -e aten | grep -v aten228 | grep -v aten234 | grep -v shhong"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
     node_list = []
@@ -33,7 +34,7 @@ def check_resource_available():
         cpu_available = int(total_cpu) - int(cpu_in_use)
         
         for i in range(cpu_available // 5):
-            if i > 3:
+            if i > 5:
                 break            
             node_list.append(node_name)
 
@@ -51,6 +52,7 @@ def create_self_play_script(node_name: str, search_limit):
 
 #SBATCH --nodelist={node_name}
 
+#SBATCH --job-name=Selfplay
 #SBATCH --time=10:00:00
 #SBATCH --nodes=1            # This needs to match Trainer(num_nodes=...)
 #SBATCH --ntasks-per-node=1  # This needs to match Trainer(devices=...)
@@ -90,8 +92,17 @@ def submit_slurm_job(script_path):
     job_id = result.stdout.strip().split()[-1]
     return job_id
 
-def run_train():
-    filename = "script/01_train_test.sh"
+
+def run_train_soft():
+    filename = "script/02_train_soft.sh"
+    job_id = submit_slurm_job(filename) 
+    if job_id is None:
+        print('Error: sbatch job error')
+    
+    print(f'train [{job_id}] created')
+
+def run_train_hard():
+    filename = "script/01_train_hard.sh"
     job_id = submit_slurm_job(filename) 
     if job_id is None:
         print('Error: sbatch job error')
@@ -107,20 +118,28 @@ def run_continuous():
 
         board_files = getFiles(
             dir = data_dir, 
-            start = newest_time,
+            start = "000000000000",
             end = "991231235959",
         )
 
         print()
         print(f"current board file length is {len(board_files)} with {newest_time}")
         print(f"current serch limit is {search_limit}")
-        if len(board_files) > 50 and train_not_running() == 0:
+        if len(board_files) > 100 and train_not_running() == 0:
             print(f"train started")
-            run_train()
-            search_limit += 50
+            run_train_soft()
+            search_limit += 5
         else:
             if selfplay_not_running() < 70:
                 fill_available_node(search_limit=search_limit)
+
+        # if len(board_files) > 50 and train_not_running() == 0:
+        #     print(f"train started")
+        #     run_train_hard()
+        #     search_limit += 50
+        # else:
+        #     if selfplay_not_running() < 70:
+        #         fill_available_node(search_limit=search_limit)
         
         print()
         print("start Sleeping for 30 seconds")
@@ -138,6 +157,24 @@ def train_not_running():
     running_jobs = int(result.stdout.strip())
     return running_jobs
 
+def delete_running():
+    job_ids = get_job_id_Selfplay()
+    for job_id in job_ids:
+        if len(job_id) > 0:
+            cmd = f"scancel {job_id}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            print(f"Job {job_id} Deleted")
+
+def get_job_id_Selfplay():
+    cmd = f"squeue -h -u shhong -n Selfplay -o '%A'"
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+    job_id = result.stdout.strip().split('\n')
+    return job_id
+
 if __name__ == '__main__':
-    run_continuous()
+    try:
+        run_continuous()
+    except KeyboardInterrupt:
+        delete_running()
     # fill_available_node(search_limit=1)
