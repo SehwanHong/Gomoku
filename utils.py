@@ -39,7 +39,7 @@ def getGameStates(board_files):
         values = numpy_file['value']
         row = boards[0].row
         col = boards[0].col
-        game_length = len(value)
+        game_length = len(values)
         single_episode_list = []
         for idx, value in enumerate(values):
             if idx < 3:
