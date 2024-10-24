@@ -152,7 +152,7 @@ def selfplay_not_running():
     return running_jobs
 
 def train_not_running():
-    cmd = "squeue | grep shhong | grep 01_train | wc -l"
+    cmd = "squeue | grep shhong | grep train | wc -l"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     running_jobs = int(result.stdout.strip())
     return running_jobs
