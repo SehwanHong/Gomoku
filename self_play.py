@@ -1,6 +1,18 @@
 from board import boardState
 from player import DQNPlayer
-from utils import get_model_path
+from utils import get_newest_model
+
+def get_model_path(model_dir='./model_save/'):
+    start, end = get_newest_model(model_dir=model_dir)
+    weightFile = None
+    weightFile_old = None
+    if start != '000000000000':
+        weightFile_old = model_dir + end + '.pth'
+
+    if end != '000000000000':
+        weightFile = model_dir + end + '.pth'
+    return weightFile, weightFile_old
+
 
 class SelfPlay:
     def __init__(self, player=DQNPlayer):
