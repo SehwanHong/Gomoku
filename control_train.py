@@ -15,7 +15,7 @@ def create_self_play(node_name, search_limit):
 
 def check_resource_available():
     cmd = "pestat -M 40000 -d | grep -e hpe -e nv | grep -v shhong"
-    # cmd = "pestat -M 40000 -d | grep -e hpe -e nv -e aten | grep -v aten228 | grep -v aten234 | grep -v shhong"
+    cmd = "pestat -M 40000 -d | grep -e hpe -e nv -e aten | grep -v aten228 | grep -v aten234 | grep -v hpe159 | grep -v shhong"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
     node_list = []
@@ -34,7 +34,7 @@ def check_resource_available():
         cpu_available = int(total_cpu) - int(cpu_in_use)
         
         for i in range(cpu_available // 5):
-            if i > 5:
+            if i > 3:
                 break            
             node_list.append(node_name)
 
@@ -111,6 +111,7 @@ def run_train_hard():
 
 def run_continuous():
     search_limit = 50
+    prev_file_len = 100
     while True:
         model_dir = "./model_save/"
         data_dir = "./data/"
@@ -125,13 +126,16 @@ def run_continuous():
         print()
         print(f"current board file length is {len(board_files)} with {newest_time}")
         print(f"current serch limit is {search_limit}")
-        if len(board_files) > 100 and train_not_running() == 0:
+        if len(board_files) > prev_file_len and train_not_running() == 0:
             print(f"train started")
             run_train_soft()
             search_limit += 5
+            prev_file_len = len(board_files)
         else:
             if selfplay_not_running() < 70:
                 fill_available_node(search_limit=search_limit)
+                print(f"sleep 30 sec for stablizing the trainnode")
+                time.sleep(30)
 
         # if len(board_files) > 50 and train_not_running() == 0:
         #     print(f"train started")
@@ -142,8 +146,8 @@ def run_continuous():
         #         fill_available_node(search_limit=search_limit)
         
         print()
-        print("start Sleeping for 30 seconds")
-        time.sleep(30)
+        print("start Sleeping for 3 seconds")
+        time.sleep(3)
 
 def selfplay_not_running():
     cmd = "squeue | grep shhong | grep tmp | wc -l"

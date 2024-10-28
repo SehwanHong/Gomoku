@@ -12,6 +12,7 @@ import os
 from utils import isCorrectTime, get_newest_model
 from model import DQN
 import time
+from utils import getFiles
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train SVM argparser")
@@ -203,7 +204,7 @@ def train_soft(config):
             with torch.no_grad():
                 next_state_values[non_final_mask] = target_net(non_final_next_states).max(1).values
 
-            expected_reward = reward.gather(action) + config.gamma * next_state_values
+            expected_reward = reward.gather(1, action) - config.gamma * next_state_values
 
             loss = criterion(outputs, expected_reward)
 
@@ -234,16 +235,28 @@ def train_soft(config):
     target_net.load_state_dict(target_net_state_dict)
     torch.save(target_net.state_dict(), filepath)
 
+def start_train(prev_len):
+    while True:
+        board_files = getFiles(
+            dir = './data/', 
+            start = "000000000000",
+            end = "991231235959",
+        )
+        if len(board_files) > prev_len + 20:
+            print(f"train started")
+            return len(board_files)
+
 if __name__ == '__main__':
     config = parse_args()
 
     fabric = Fabric(accelerator='cuda', devices=1, strategy="ddp",)
     fabric.launch()
     fabric.seed_everything(990104)
-
+    prev_len = config.episodes
     for count in range(config.model_update_count):
         print(f"current model count {count}")
 
+        prev_len = start_train(prev_len)
         if config.hard_update:
             train_hard(config)
         elif config.soft_update:
