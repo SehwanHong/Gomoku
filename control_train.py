@@ -129,7 +129,7 @@ def run_continuous():
         if len(board_files) > prev_file_len and train_not_running() == 0:
             print(f"train started")
             run_train_soft()
-            search_limit += 5
+            search_limit *= 2
             prev_file_len = len(board_files)
         else:
             if selfplay_not_running() < 70:

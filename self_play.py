@@ -1,5 +1,6 @@
 from board import boardState
 from player import DQNPlayer
+from utils import get_model_path
 
 class SelfPlay:
     def __init__(self, player=DQNPlayer):
@@ -10,13 +11,26 @@ class SelfPlay:
         while True:
             yield self.p
     
-    def play(self, game=boardState, train=False, print_state=False):
+    def play(
+            self, 
+            game=boardState,
+            train=False,
+            print_state=False,
+            update_model=False,
+            model_dir="./model_save/"
+        ):
         alternator = self.alternate()
         self.current_state = game()
         self.p.reset(self.current_state)
 
         while True:
             player = next(alternator)
+        
+            if update_model:
+                weightFile, weightFile_old = get_model_path(model_dir=model_dir)
+                if weightFile is not None:
+                    player.loadDQN(weightFile)
+        
             act = player.search(self.current_state, train=train, print_state=print_state)
             
             self.current_state = self.current_state.takeAction(act)

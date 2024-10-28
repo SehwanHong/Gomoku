@@ -16,7 +16,7 @@ def playGraphicRenju():
     display = RenjuDisplay(
         root,
         searchLimit=900,
-        weightfile='241023033714.pth',
+        weightfile='241027204443.pth',
     )
     display.mainloop()
     root.mainloop()

@@ -23,6 +23,8 @@ def DQN_selfplay(
             game=boardState,
             train = train,
             print_state=print_state,
+            update_model=update_model,
+            model_dir=model_dir,
         )
         if winner == 1:
             print("p1 win!")
@@ -31,10 +33,6 @@ def DQN_selfplay(
         else:
             print("p2 win!")
         player.saveGamePlay()
-        if update_model:
-            weightFile, weightFile_old = get_model_path(model_dir=model_dir)
-            if weightFile is not None:
-                player.loadDQN(weightFile)
 
 def DQN_evaluateplay(boardState = Renju, player_1=None, player_2=None, print_state=False, iter=10):
     boardState = boardState

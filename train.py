@@ -242,7 +242,7 @@ def start_train(prev_len):
             start = "000000000000",
             end = "991231235959",
         )
-        if len(board_files) > prev_len + 20:
+        if len(board_files) > prev_len:
             print(f"train started")
             return len(board_files)
 
