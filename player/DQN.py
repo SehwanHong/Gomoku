@@ -135,7 +135,7 @@ class DQNPlayer(Player):
             #         node.children[action] = newNodes[idx]
             #         node.children[action].pQ = Q_value[7*action.x + action.y]
 
-            return node, Q_value.sum()
+            return node, Q_value.max()
     
     @staticmethod
     # @ray.remote
