@@ -67,7 +67,6 @@ class DQNPlayer(Player):
                 i += 1
         else:
             for i in tqdm(range(self.searchLimit)):
-                # print("\rsearch {} th".format(i+1), end='')
                 self.executeRound(deterministic=not train)
         t2 = time.time()-t
         if print_state:
@@ -100,7 +99,7 @@ class DQNPlayer(Player):
         else:
             self.root = self.createNode(self.root, action)
             self.root.parent = None
-    
+   
     def executeRound(self, deterministic = True):
         """
             execute a selection-expansion-simulation-backpropagation round
@@ -116,9 +115,11 @@ class DQNPlayer(Player):
         action = None
         while not node.N == 0 and not node.isTerminal:
             node = self.evaluateNode(node, self.explorationConstant, deterministic=deterministic)
+            if len(node.children) <= len(node.state.getPossibleActions()):
+                break
         return self.expand(node)
 
-    def expand(self, node, action):
+    def expand(self, node):
         temp_state = node.state.deepcopy()
         actions = temp_state.getPossibleActions()
         if len(actions) == 0:

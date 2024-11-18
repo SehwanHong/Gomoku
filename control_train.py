@@ -62,13 +62,13 @@ def create_self_play_script(node_name: str, search_limit):
 
 # run script from above
 srun --container-image /purestorage/project/shhong/enroot_images/torch2.sqsh \
-    --container-mounts /purestorage:/purestorage,/purestorage/project/shhong/tmp:/home/$USER/.cache \
+        --container-mounts /purestorage:/purestorage,/purestorage/project/shhong/cache:/home/$USER/.cache,/purestorage/project/shhong/tmp:/tmp/ \
     --no-container-mount-home \
     --container-writable \
     --container-workdir /purestorage/project/shhong/Gomoku/ \
     bash -c "
     pip install lightning;
-    python server_main.py --data_dir ./data/ --model_dir ./model_save/ --store_game_play --search_limit {search_limit} --iter 100 --self_play --train --update_model;
+    python server_main.py --data_dir ./data/ --model_dir ./model_save/ --store_game_play --search_limit {search_limit} --iter 1 --self_play --train --update_model;
     "
 
 """
@@ -126,10 +126,22 @@ def run_continuous():
         print()
         print(f"current board file length is {len(board_files)} with {newest_time}")
         print(f"current serch limit is {search_limit}")
+        if prev_file_len < 1000:
+            search_limit = 50
+        elif prev_file_len < 2000:
+            search_limit = 100
+        elif prev_file_len < 3000:
+            search_limit = 200
+        elif prev_file_len < 4000:
+            search_limit = 400
+        elif prev_file_len < 4500:
+            search_limit = 900
+        else:
+            break
+
         if len(board_files) > prev_file_len and train_not_running() == 0:
             print(f"train started")
             run_train_soft()
-            search_limit *= 2
             prev_file_len = len(board_files)
         else:
             if selfplay_not_running() < 70:

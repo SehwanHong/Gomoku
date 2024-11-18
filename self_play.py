@@ -38,6 +38,8 @@ class SelfPlay:
         while True:
             player = next(alternator)
         
+            if print_state:
+                print("Search for action")
             if update_model:
                 weightFile, weightFile_old = get_model_path(model_dir=model_dir)
                 if weightFile is not None:
