@@ -131,8 +131,7 @@ class DQNPlayer(Player):
                         break
                     else:
                         new_pQ[arg_xy] = float("-inf")
-                break
-        return self.expand(bestNode, action)
+                return self.expand(bestNode, action)
 
     def expand(self, node, action):
         temp_state = node.state.deepcopy()
