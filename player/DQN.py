@@ -113,25 +113,12 @@ class DQNPlayer(Player):
 
     def selectNode(self, node, deterministic = True):
         # if not expended and not terminal find node that is best
+        action = None
         while not node.N == 0 and not node.isTerminal:
-            if len(node.children) > len(node.state.getPossibleActions()):
-                raise ValueError
-            elif len(node.children) == len(node.state.getPossibleActions()):
-                action = __class__.getBestChild(node, self.explorationConstant, deterministic)
-                node = node.children[action]
-            else:
-                possibleMoves = node.state.getPossibleActions()
-                new_pQ = node.pQ.clone()
-                while True:
-                    arg_xy = torch.argmax(new_pQ)
-                    action = Action(node.state.currentStone, arg_xy//node.state.row, arg_xy%node.state.col)
-                    if action in possibleMoves and action not in node.children:
-                        bestNode = __class__.createNode(node, action)
-                        node.children[action] = bestNode
-                        break
-                    else:
-                        new_pQ[arg_xy] = float("-inf")
-                return self.expand(bestNode, action)
+            node, action = self.evaluateNode(node, self.explorationConstant, deterministic=deterministic)
+        if action == None:
+            raise ValueError
+        return self.expand(node, action)
 
     def expand(self, node, action):
         temp_state = node.state.deepcopy()
