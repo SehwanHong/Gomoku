@@ -2,6 +2,7 @@ from action import Action
 from .player import Player
 from model import DQN
 from board import boardState
+from policy import randomPolicy
 
 import numpy as np
 import math
@@ -22,7 +23,8 @@ class DQNPlayer(Player):
             weightfile=None,
             store = False,
             device = 'mps',
-            save_dir = "./data/"
+            save_dir = "./data/",
+            rolloutPolicy=randomPolicy,
         ):
 
         self.searchLimit = searchLimit
@@ -34,6 +36,7 @@ class DQNPlayer(Player):
         self.store = store
         self.save_dir = save_dir
         self.device = device
+        self.rollout = rolloutPolicy
         
         if weightfile == None:
             self.DQNnet = DQN()
@@ -102,21 +105,23 @@ class DQNPlayer(Player):
         """
             execute a selection-expansion-simulation-backpropagation round
         """
-        node, reward = self.selectNode(self.root, deterministic)
+        node, imidate_reward = self.selectNode(self.root, deterministic)
+        late_reward = self.rollout(node.state) * node.state.currentStone
         # roll out using DQN funciton
+        reward = imidate_reward + late_reward * 100
         __class__.backpropogate(node, reward)
 
     def selectNode(self, node, deterministic = True):
         # if not expended and not terminal find node that is best
         while not node.N == 0 and not node.isTerminal:
-            node = self.evaluateNode(node, self.explorationConstant, deterministic)
-        return self.expand(node)
+            node, action = self.evaluateNode(node, self.explorationConstant, deterministic)
+        return self.expand(node, action)
 
-    def expand(self, node):
+    def expand(self, node, action):
         temp_state = node.state.deepcopy()
         actions = temp_state.getPossibleActions()
         if len(actions) == 0:
-            return node, 1e2
+            return node, node.state.winner * node.state.currentStone
         else:
             gameState = self.generateGameState(node) #Generate Game State
             gameState = torch.from_numpy(gameState).to(device=self.device)
@@ -124,6 +129,12 @@ class DQNPlayer(Player):
             Q_value = prediction[0]
 
             node.pQ = Q_value
+
+            parentNode = node.parent
+
+            three_reward = parentNode.state.isThree(action.x, action.y, parentNode.state.currentStone) * 20
+            four_reward = parentNode.state.isFour(action.x, action.y, parentNode.state.currentStone) * 50
+
 
             # make expand with Q and U value
             # newNodes = ray.get([__class__.createNode.remote(node, action) for action in actions])
@@ -135,8 +146,8 @@ class DQNPlayer(Player):
             #         node.children[action] = newNodes[idx]
             #         node.children[action].pQ = Q_value[7*action.x + action.y]
 
-            return node, Q_value.max()
-    
+            return node, three_reward + four_reward
+
     @staticmethod
     # @ray.remote
     def createNode(node, action):
@@ -194,7 +205,7 @@ class DQNPlayer(Player):
             raise ValueError
         elif len(node.children) == len(node.state.getPossibleActions()):
             action = __class__.getBestChild(node, explorationConstant, deterministic)
-            return node.children[action]
+            return node.children[action], action
         else:
             possibleMoves = node.state.getPossibleActions()
             new_pQ = node.pQ.clone()
@@ -204,7 +215,7 @@ class DQNPlayer(Player):
                 if action in possibleMoves and action not in node.children:
                     bestNode = __class__.createNode(node, action)
                     node.children[action] = bestNode
-                    return bestNode
+                    return bestNode, action
                 else:
                     new_pQ[arg_xy] = float("-inf")
                     
