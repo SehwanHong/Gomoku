@@ -115,10 +115,8 @@ class DQNPlayer(Player):
         # if not expended and not terminal find node that is best
         action = None
         while not node.N == 0 and not node.isTerminal:
-            node, action = self.evaluateNode(node, self.explorationConstant, deterministic=deterministic)
-        if action == None:
-            raise ValueError
-        return self.expand(node, action)
+            node = self.evaluateNode(node, self.explorationConstant, deterministic=deterministic)
+        return self.expand(node)
 
     def expand(self, node, action):
         temp_state = node.state.deepcopy()
@@ -126,30 +124,35 @@ class DQNPlayer(Player):
         if len(actions) == 0:
             return node, node.state.winner * node.state.currentStone
         else:
-            gameState = self.generateGameState(node) #Generate Game State
-            gameState = torch.from_numpy(gameState).to(device=self.device)
-            prediction = self.DQNnet(gameState)
-            Q_value = prediction[0]
+            if len(node.children) == 0:
+                gameState = self.generateGameState(node) #Generate Game State
+                gameState = torch.from_numpy(gameState).to(device=self.device)
+                prediction = self.DQNnet(gameState)
+                Q_value = prediction[0]
 
-            node.pQ = Q_value
+                node.pQ = Q_value
 
-            parentNode = node.parent
+            if len(node.children) <= len(node.state.getPossibleActions()):
+                possibleMoves = node.state.getPossibleActions()
+                new_pQ = node.pQ.clone()
+                while True:
+                    arg_xy = torch.argmax(new_pQ)
+                    action = Action(node.state.currentStone, arg_xy//node.state.row, arg_xy%node.state.col)
+                    if action in possibleMoves and action not in node.children:
+                        bestNode = __class__.createNode(node, action)
+                        node.children[action] = bestNode
+                        break
+                    else:
+                        new_pQ[arg_xy] = float("-inf")
 
-            three_reward = parentNode.state.isThree(action.x, action.y, parentNode.state.currentStone) * 20
-            four_reward = parentNode.state.isFour(action.x, action.y, parentNode.state.currentStone) * 50
+            if action != None:
+                three_reward = node.state.isThree(action.x, action.y, node.state.currentStone) * 20
+                four_reward = node.state.isFour(action.x, action.y, node.state.currentStone) * 50
 
+                return bestNode, three_reward + four_reward
+            else:
+                return bestNode, 0
 
-            # make expand with Q and U value
-            # newNodes = ray.get([__class__.createNode.remote(node, action) for action in actions])
-
-            # for idx, action in enumerate(actions):
-            #     if action not in node.children:
-            #         # newNode = __class__.createNode(node, action)
-            #         # node.children[action] = newNode
-            #         node.children[action] = newNodes[idx]
-            #         node.children[action].pQ = Q_value[7*action.x + action.y]
-
-            return node, three_reward + four_reward
 
     @staticmethod
     # @ray.remote
@@ -208,19 +211,9 @@ class DQNPlayer(Player):
             raise ValueError
         elif len(node.children) == len(node.state.getPossibleActions()):
             action = __class__.getBestChild(node, explorationConstant, deterministic)
-            return node.children[action], action
+            return node.children[action]
         else:
-            possibleMoves = node.state.getPossibleActions()
-            new_pQ = node.pQ.clone()
-            while True:
-                arg_xy = torch.argmax(new_pQ)
-                action = Action(node.state.currentStone, arg_xy//node.state.row, arg_xy%node.state.col)
-                if action in possibleMoves and action not in node.children:
-                    bestNode = __class__.createNode(node, action)
-                    node.children[action] = bestNode
-                    return bestNode, action
-                else:
-                    new_pQ[arg_xy] = float("-inf")
+            return node
                     
 
     @staticmethod
