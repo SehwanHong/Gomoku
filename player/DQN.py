@@ -128,10 +128,11 @@ class DQNPlayer(Player):
                     if action in possibleMoves and action not in node.children:
                         bestNode = __class__.createNode(node, action)
                         node.children[action] = bestNode
-                        return self.expand(bestNode, action)
+                        break
                     else:
                         new_pQ[arg_xy] = float("-inf")
-        # return self.expand(node, action)
+                break
+        return self.expand(bestNode, action)
 
     def expand(self, node, action):
         temp_state = node.state.deepcopy()
