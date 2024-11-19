@@ -24,7 +24,7 @@ class DQNPlayer(Player):
             store = False,
             device = 'mps',
             save_dir = "./data/",
-            rolloutPolicy=randomPolicy,
+            # rolloutPolicy=randomPolicy,
         ):
 
         self.searchLimit = searchLimit
@@ -36,7 +36,7 @@ class DQNPlayer(Player):
         self.store = store
         self.save_dir = save_dir
         self.device = device
-        self.rollout = rolloutPolicy
+        # self.rollout = __class__.randomPolicy
         
         if weightfile == None:
             self.DQNnet = DQN()
@@ -105,7 +105,8 @@ class DQNPlayer(Player):
             execute a selection-expansion-simulation-backpropagation round
         """
         node, imidate_reward = self.selectNode(self.root, deterministic)
-        late_reward = self.rollout(node.state) * node.state.currentStone
+        late_reward = __class__.randomPolicy(node.state)
+        late_reward = late_reward * node.state.currentStone
         # roll out using DQN funciton
         reward = imidate_reward + late_reward * 100
         __class__.backpropogate(node, reward)
@@ -115,13 +116,14 @@ class DQNPlayer(Player):
         action = None
         while not node.N == 0 and not node.isTerminal:
             node = self.evaluateNode(node, self.explorationConstant, deterministic=deterministic)
-            if len(node.children) <= len(node.state.getPossibleActions()):
+            if not node.isFullyExpanded:
                 break
-        return self.expand(node)
+
+        node, reward = self.expand(node)
+        return node, reward
 
     def expand(self, node):
-        temp_state = node.state.deepcopy()
-        actions = temp_state.getPossibleActions()
+        actions = node.state.getPossibleActions()
         if len(actions) == 0:
             return node, node.state.winner * node.state.currentStone
         else:
@@ -133,18 +135,20 @@ class DQNPlayer(Player):
 
                 node.pQ = Q_value
 
-            if len(node.children) <= len(node.state.getPossibleActions()):
-                possibleMoves = node.state.getPossibleActions()
+            if len(node.children) <= len(actions):
                 new_pQ = node.pQ.clone()
                 while True:
                     arg_xy = torch.argmax(new_pQ)
                     action = Action(node.state.currentStone, arg_xy//node.state.row, arg_xy%node.state.col)
-                    if action in possibleMoves and action not in node.children:
+                    if action in actions and action not in node.children:
                         bestNode = __class__.createNode(node, action)
                         node.children[action] = bestNode
                         break
                     else:
                         new_pQ[arg_xy] = float("-inf")
+
+            if len(node.children) == len(actions):
+                node.isFullyExpanded = True
 
             if action != None:
                 three_reward = node.state.isThree(action.x, action.y, node.state.currentStone) * 20
@@ -242,3 +246,15 @@ class DQNPlayer(Player):
                 select += child.N
                 if select >= epsilon:
                     return action
+    
+    @staticmethod
+    def randomPolicy(state):
+        count = 0
+        while not state.isTerminal():
+            try:
+                action = random.choice(state.getPossibleActions())
+            except IndexError:
+                raise Exception("Non-terminal state has no possible actions: " + str(state))
+            state = state.takeAction(action)
+            count += 1
+        return state.getReward()
